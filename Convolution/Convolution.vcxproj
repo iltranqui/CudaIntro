@@ -11,9 +11,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{93D0120D-E9A0-4A4C-B105-D99D44BD0396}</ProjectGuid>
-    <RootNamespace>Cuda</RootNamespace>
-    <ProjectName>add_vector</ProjectName>
+    <ProjectGuid>{445AC304-5BD3-45CA-B6F2-D6D1D6998E5C}</ProjectGuid>
+    <RootNamespace>Convolution</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -78,7 +77,7 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="add_vector.cu" />
+    <CudaCompile Include="conv.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
