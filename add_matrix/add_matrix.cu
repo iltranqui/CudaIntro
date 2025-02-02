@@ -23,14 +23,16 @@
 template <typename T>
 T** create2DMatrix(size_t width, size_t height, T min_value, T max_value) {
     // Random number generator
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(min_value, max_value);
+	std::random_device rd;     // Obtain a random number from hardware
+	std::mt19937 gen(rd());    // Seed the generator
+	std::uniform_real_distribution<> dis(min_value, max_value);   // Define the range of the random number generator
 
+    /*  // need to figure out what this does 
     if constexpr (std::is_integral<T>::value) {
         std::uniform_int_distribution<> int_dis(min_value, max_value);
         dis = int_dis; // Switch to integer distribution for integral types
     }
+	*/
 
     // Allocate memory for the matrix
     T** matrix = new T * [height];
@@ -52,9 +54,11 @@ T** create2DMatrix(size_t width, size_t height, T min_value, T max_value) {
  * @param max_value: maximum value for the random number generator
  * @return: void pointer to the 2D matrix
  */
+
 void* createMatrix(size_t width, size_t height, const std::string& type_def, double min_value, double max_value) {
     if (type_def == "int") {
         return static_cast<void*>(create2DMatrix<int>(width, height, static_cast<int>(min_value), static_cast<int>(max_value)));
+        // The static_cast performs the conversion at compile time
     }
     else if (type_def == "float") {
         return static_cast<void*>(create2DMatrix<float>(width, height, static_cast<float>(min_value), static_cast<float>(max_value)));
@@ -83,15 +87,27 @@ void printMatrix(T** matrix, size_t width, size_t height) {
     }
 }
 
-// How to use the createMatrix function
+// Kernel function to add two matrices
+__global__ void addMatrices(const int* matrix_1, const int* matrix_2, int* matrix_result, size_t width, size_t height) {
+    // Calculate the global thread ID for the 2D grid
+    size_t row = blockIdx.y * blockDim.y + threadIdx.y;
+    size_t col = blockIdx.x * blockDim.x + threadIdx.x;
+
+    // Perform addition only for valid indices
+    if (row < height && col < width) {
+        size_t idx = row * width + col; // Flattened index
+        matrix_result[idx] = matrix_1[idx] + matrix_2[idx];
+    }
+}
+
 // How to use the createMatrix function
 // Create a 2D matrix with random values
 //int** matrix = static_cast<int**>(createMatrix(width, height, type_def, min_value, max_value));
 
 int main() {
     // Matrix dimensions
-    size_t width = 5;
-    size_t height = 5;
+    size_t width = 32;
+    size_t height = 32;
     // Type of the matrix
     std::string type_def = "int";
     // Random number generator limits
@@ -117,7 +133,40 @@ int main() {
     cudaMemcpy(d_matrix_1, matrix_1[0], width * height * sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy(d_matrix_2, matrix_2[0], width * height * sizeof(int), cudaMemcpyHostToDevice);
 
-    // Remember that matrix multiplication is made element wise
+    // Define grid and block dimensions
+    dim3 threadsPerBlock(16, 16); // 16x16 threads per block
+    dim3 blocksPerGrid((width + threadsPerBlock.x - 1) / threadsPerBlock.x,
+        (height + threadsPerBlock.y - 1) / threadsPerBlock.y);
+
+    // Launch the kernel
+    addMatrices << <blocksPerGrid, threadsPerBlock >> > (d_matrix_1, d_matrix_2, d_matrix_result, width, height);
+
+    // Copy the result back to the host
+    cudaMemcpy(matrix_result[0], d_matrix_result, width * height * sizeof(int), cudaMemcpyDeviceToHost);
+
+    // Print the resulting matrix
+    std::cout << "Resultant Matrix: " << std::endl;
+    for (size_t i = 0; i < height; i++) {
+        for (size_t j = 0; j < width; j++) {
+            std::cout << matrix_result[i][j] << " ";
+        }
+        std::cout << std::endl;
+    }
+
+    // Free GPU memory
+    cudaFree(d_matrix_1);
+    cudaFree(d_matrix_2);
+    cudaFree(d_matrix_result);
+
+    // Free host memory
+    delete[] matrix_1[0];
+    delete[] matrix_1;
+    delete[] matrix_2[0];
+    delete[] matrix_2;
+    delete[] matrix_result[0];
+    delete[] matrix_result;
+
+    return 1;
 
 
 }

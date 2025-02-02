@@ -13,6 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{445AC304-5BD3-45CA-B6F2-D6D1D6998E5C}</ProjectGuid>
     <RootNamespace>Convolution</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -64,6 +65,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -77,7 +79,8 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="conv.cu" />
+    <CudaCompile Include="conv2d_inf.cu" />
+    <CudaCompile Include="conv2_back.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
