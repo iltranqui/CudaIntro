@@ -1,6 +1,4 @@
 ﻿// conv2d_infer.cu with inference
-#define MAIN
-#ifdef MAIN
 // conv2d.cu
 #include <iostream>
 #include <cstdlib>
@@ -45,7 +43,7 @@ __global__ void conv2D(const float* input, float* output, int width, int height)
     }
 }
 
-int main() {
+int conv2d_inf() {
     // Set seed for random number generation
     std::srand(static_cast<unsigned int>(std::time(0)));
 
@@ -108,5 +106,4 @@ int main() {
 
     return 0;
 }
-#endif // MAIN
 
