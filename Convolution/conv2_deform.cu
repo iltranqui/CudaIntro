@@ -9,33 +9,56 @@
 // CUDA kernel to initialize random matrices
 template <typename T>
 __global__ void init_matrix(T* mat, int rows, int cols, float scale = 1.0f) {
+    // Calculate the global thread indices
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     int idy = blockIdx.y * blockDim.y + threadIdx.y;
     int index = idy * cols + idx;
+
+    // Check if the thread is within matrix bounds
     if (idx < cols && idy < rows) {
+        // Initialize the random state
         curandState state;
-        curand_init(1234, index, 0, &state);
+		curand_init(1234, index, 0, &state);  // Use index for unique seed
+
+        // Assign a random value to the matrix element, scaled and shifted to [-0.5, 0.5]
         mat[index] = scale * (curand_uniform(&state) - 0.5f);
     }
 }
 
 // Forward pass for deformable convolution
+/* Deformable Convolutional Networks https://arxiv.org/abs/1703.06211 have 2 type of parameters: 
+		- weight: the convolutional kernel weights
+		- offset: the learned offsets to the sampling positions
+
+*/
 __global__ void deform_conv2d_forward(float* input, float* offset, float* weight, float* output,
     int in_h, int in_w, int out_h, int out_w, int ksize, int stride) {
+    // Compute output pixel coordinates
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    // Ensure the thread is within output dimensions
     if (x < out_w && y < out_h) {
-        float sum = 0.0f;
+        float sum = 0.0f; // Accumulate convolution result
+
+        // Iterate over the kernel window
         for (int i = 0; i < ksize; i++) {
             for (int j = 0; j < ksize; j++) {
+                // Compute the index for the offset values
                 int offset_idx = (y * out_w + x) * 2;
-                int px = x * stride + j + offset[offset_idx];
-                int py = y * stride + i + offset[offset_idx + 1];
+
+                // Compute the sampling positions with learned offsets
+                int px = x * stride + j + offset[offset_idx];  // Horizontal position
+                int py = y * stride + i + offset[offset_idx + 1];  // Vertical position
+
+                // Ensure sampling positions are within input bounds
                 if (px >= 0 && px < in_w && py >= 0 && py < in_h) {
-                    sum += input[py * in_w + px] * weight[i * ksize + j];
+                    sum += input[py * in_w + px] * weight[i * ksize + j]; // Apply convolution
                 }
             }
         }
+
+        // Store the computed output value
         output[y * out_w + x] = sum;
     }
 }

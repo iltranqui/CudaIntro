@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -13,7 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{93D0120D-E9A0-4A4C-B105-D99D44BD0396}</ProjectGuid>
     <RootNamespace>Cuda</RootNamespace>
-    <ProjectName>add_vector</ProjectName>
+    <ProjectName>MNIST</ProjectName>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -81,9 +81,22 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="add_vector.cu" />
+    <CudaCompile Include="cuda_kernels.cu" />
+    <CudaCompile Include="main.cu" />
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="dataloader.h" />
+    <ClInclude Include="cuda kernels.cuh" />
+    <ClInclude Include="network.h" />
+    <ClInclude Include="train.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="dataloader.cpp" />
+    <ClCompile Include="Source.cpp" />
+    <ClCompile Include="train.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

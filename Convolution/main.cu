@@ -11,6 +11,9 @@
 
 int main() {
 
+	// AI conv deform
 	conv2d_deform();
+	// conv 2d pmpp
+	launchConvolution2DBasicKernel();
 	return 0;
 }
