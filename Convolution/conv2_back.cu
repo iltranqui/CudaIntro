@@ -1,222 +1,214 @@
-// conv2d_backprop.cu with backpropagation
-// #define MAIN
-#ifdef MAIN
 #include <iostream>
-#include <cstdlib>
-#include <ctime>
 #include <cuda_runtime.h>
-#include <device_launch_parameters.h>
+#include <curand_kernel.h>
+#include "device_launch_parameters.h"
+#include "main_header.cuh"
+#include <cstdlib>
 
-#define IMAGE_WIDTH 512
-#define IMAGE_HEIGHT 512
-#define KERNEL_WIDTH 3
-#define KERNEL_HEIGHT 3
+#define BLOCK_SIZE 16
 
-// -------------------------------------------------------------------------
-// Forward Convolution Kernel (for context/testing)
-// -------------------------------------------------------------------------
-__global__ void conv2D_forward(const float* input, const float* kernel, float* output,
-    int width, int height) {
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-    int kCenterX = KERNEL_WIDTH / 2;
-    int kCenterY = KERNEL_HEIGHT / 2;
-
-    if (x < width && y < height) {
-        float sum = 0.0f;
-        // Iterate over kernel elements.
-        for (int m = 0; m < KERNEL_HEIGHT; m++) {
-            for (int n = 0; n < KERNEL_WIDTH; n++) {
-                int row = y + m - kCenterY;
-                int col = x + n - kCenterX;
-                // Use zero-padding if indices are out-of-bound.
-                if (row >= 0 && row < height && col >= 0 && col < width) {
-                    sum += input[row * width + col] * kernel[m * KERNEL_WIDTH + n];
-                }
-            }
-        }
-        output[y * width + x] = sum;
+// ----------------------------------------------------------
+// Kernel to initialize a matrix with random values using curand
+// ----------------------------------------------------------
+template <typename T>
+__global__ void init_matrix(T* mat, int size, float scale = 1.0f) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < size) {
+        curandState state;
+        curand_init(1234, idx, 0, &state);
+        mat[idx] = scale * (curand_uniform(&state) - 0.5f);
     }
 }
 
-// -------------------------------------------------------------------------
-// Backpropagation Kernel 1: Compute gradient with respect to input.
-// -------------------------------------------------------------------------
-// This computes: d_input = conv2D_backprop_input(d_output, kernel)
-// where the kernel is flipped (rotated 180°)
-__global__ void conv2D_backprop_input(const float* d_output, const float* kernel,
-    float* d_input, int width, int height) {
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
-    int y = blockIdx.y * blockDim.y + threadIdx.y;
-    int kCenterX = KERNEL_WIDTH / 2;
-    int kCenterY = KERNEL_HEIGHT / 2;
-
-    if (x < width && y < height) {
-        float sum = 0.0f;
-        // For each input pixel, sum contributions from all d_output positions
-        // that used this pixel in the forward pass.
-        for (int m = 0; m < KERNEL_HEIGHT; m++) {
-            for (int n = 0; n < KERNEL_WIDTH; n++) {
-                // In the forward pass: output(y,x) got contribution from input(y + m - kCenterY, x + n - kCenterX)
-                // In backprop, we “reverse” the operation:
-                int out_x = x - n + kCenterX;
-                int out_y = y - m + kCenterY;
-                if (out_x >= 0 && out_x < width && out_y >= 0 && out_y < height) {
-                    // Use the rotated kernel (flip vertically and horizontally).
-                    int r_m = KERNEL_HEIGHT - 1 - m;
-                    int r_n = KERNEL_WIDTH - 1 - n;
-                    sum += d_output[out_y * width + out_x] * kernel[r_m * KERNEL_WIDTH + r_n];
+// ----------------------------------------------------------
+// Forward Pass: Basic 2D Convolution Kernel
+// ----------------------------------------------------------
+// N: input image
+// F: filter (kernel) of size (2*r+1)x(2*r+1)
+// P: output image
+// r: filter radius (e.g., r=1 => 3x3 filter)
+// width, height: dimensions of the input/output image
+__global__ void convolution_2d_basic_kernel_forward(float* N, float* F, float* P, int r, int width, int height) {
+    int outCol = blockIdx.x * blockDim.x + threadIdx.x;
+    int outRow = blockIdx.y * blockDim.y + threadIdx.y;
+    if (outCol < width && outRow < height) {
+        float Pvalue = 0.0f;
+        // Loop over the filter window
+        for (int fRow = 0; fRow < 2 * r + 1; fRow++) {
+            for (int fCol = 0; fCol < 2 * r + 1; fCol++) {
+                int inRow = outRow - r + fRow;
+                int inCol = outCol - r + fCol;
+                // Check bounds for the input image
+                if (inRow >= 0 && inRow < height && inCol >= 0 && inCol < width) {
+                    Pvalue += N[inRow * width + inCol] * F[fRow * (2 * r + 1) + fCol];
                 }
             }
         }
-        d_input[y * width + x] = sum;
+        P[outRow * width + outCol] = Pvalue;
     }
 }
 
-// -------------------------------------------------------------------------
-// Backpropagation Kernel 2: Compute gradient with respect to the kernel.
-// -------------------------------------------------------------------------
-// This computes: d_kernel = conv2D_backprop_kernel(input, d_output)
-// Each kernel element is computed by summing over all spatial positions.
-__global__ void conv2D_backprop_kernel(const float* input, const float* d_output,
-    float* d_kernel, int width, int height) {
-    // Each thread computes one element of the kernel gradient.
-    int k = threadIdx.x; // k ranges from 0 to KERNEL_WIDTH*KERNEL_HEIGHT - 1
-    if (k < KERNEL_WIDTH * KERNEL_HEIGHT) {
-        int kernel_row = k / KERNEL_WIDTH;
-        int kernel_col = k % KERNEL_WIDTH;
-        int kCenterX = KERNEL_WIDTH / 2;
-        int kCenterY = KERNEL_HEIGHT / 2;
-        float sum = 0.0f;
-
-        // Loop over every output pixel.
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                // In the forward pass, output(y,x) used:
-                // input(y + kernel_row - kCenterY, x + kernel_col - kCenterX)
-                int in_x = x + kernel_col - kCenterX;
-                int in_y = y + kernel_row - kCenterY;
-                if (in_x >= 0 && in_x < width && in_y >= 0 && in_y < height) {
-                    sum += input[in_y * width + in_x] * d_output[y * width + x];
+// ----------------------------------------------------------
+// Backward Pass: Compute Gradient w.r.t. Filter Weights
+// ----------------------------------------------------------
+// N: input image
+// grad_output: gradient of loss w.r.t. output P (assumed pre-computed, here set to ones)
+// grad_F: gradient for filter F (to be computed)
+// r: filter radius, width and height: dimensions of image
+//
+// For each filter element F[fRow, fCol], the gradient is the sum over
+// all output pixels (grad_output * corresponding input pixel).
+__global__ void convolution_2d_backward_kernel(float* N, float* grad_output, float* grad_F, int r, int width, int height) {
+    // Each thread computes one filter element gradient.
+    int fRow = threadIdx.y;
+    int fCol = threadIdx.x;
+    int filterSize = 2 * r + 1;
+    if (fRow < filterSize && fCol < filterSize) {
+        float grad = 0.0f;
+        // Loop over all output positions
+        for (int outRow = 0; outRow < height; outRow++) {
+            for (int outCol = 0; outCol < width; outCol++) {
+                // The corresponding input pixel for this filter element:
+                int inRow = outRow - r + fRow;
+                int inCol = outCol - r + fCol;
+                if (inRow >= 0 && inRow < height && inCol >= 0 && inCol < width) {
+                    grad += grad_output[outRow * width + outCol] * N[inRow * width + inCol];
                 }
             }
         }
-        d_kernel[k] = sum;
+        grad_F[fRow * filterSize + fCol] = grad;
     }
 }
 
-// -------------------------------------------------------------------------
-// Main: Setup data, run forward conv and backpropagation.
-// -------------------------------------------------------------------------
-int main() {
-    // Seed for reproducibility.
-    std::srand(static_cast<unsigned int>(std::time(0)));
+// ----------------------------------------------------------
+// Weight Update Kernel: Simple Gradient Descent Step
+// ----------------------------------------------------------
+// F: filter weights
+// grad_F: computed gradient for filter weights
+// filterSize: total number of weights in the filter
+// learning_rate: step size for gradient descent
+__global__ void update_weights_kernel(float* F, float* grad_F, int filterSize, float learning_rate) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < filterSize) {
+        F[idx] -= learning_rate * grad_F[idx];
+    }
+}
 
-    int imageSize = IMAGE_WIDTH * IMAGE_HEIGHT;
-    int imageBytes = imageSize * sizeof(float);
-    int kernelSize = KERNEL_WIDTH * KERNEL_HEIGHT;
-    int kernelBytes = kernelSize * sizeof(float);
+int conv2d_backpass() {
+    // Parameters for the image and convolution
+    int width = 32;
+    int height = 32;
+	int r = 3; // Filter radius: r=1 gives a 3x3 filter # 2 gives 5x5 filter 
+    int filterSize = (2 * r + 1) * (2 * r + 1);
+    int imageSize = width * height;
 
-    // Allocate host memory.
-    float* h_input = new float[imageSize];
-    float* h_output = new float[imageSize];
-    float* h_d_input = new float[imageSize];
-    float* h_d_output = new float[imageSize];
-    float* h_kernel = new float[kernelSize];
-    float* h_d_kernel = new float[kernelSize];
+    // Allocate unified memory for input image, filter, output, and gradients.
+    float* N, * F, * P, * grad_output, * grad_F, *target;
+    cudaMallocManaged(&N, imageSize * sizeof(float));
+    cudaMallocManaged(&F, filterSize * sizeof(float));
+    cudaMallocManaged(&P, imageSize * sizeof(float));
+    cudaMallocManaged(&grad_output, imageSize * sizeof(float));
+    cudaMallocManaged(&grad_F, filterSize * sizeof(float));
+    cudaMallocManaged(&target, imageSize * sizeof(float));
 
-    // Initialize the input image with random values.
+    // Initialize input image N and filter F with random values.
+    int numThreads = 256;
+    int numBlocks_N = (imageSize + numThreads - 1) / numThreads;
+    int numBlocks_F = (filterSize + numThreads - 1) / numThreads;
+    init_matrix << <numBlocks_N, numThreads >> > (N, imageSize, 1.0f);
+    init_matrix << <numBlocks_F, numThreads >> > (F, filterSize, 1.0f);
+    cudaDeviceSynchronize();
+
+    // For simplicity, set grad_output to ones (simulate gradient from next layer)
     for (int i = 0; i < imageSize; i++) {
-        h_input[i] = static_cast<float>(std::rand() % 256);
-        // For simplicity, assume the gradient from the next layer is all ones.
-        h_d_output[i] = 1.0f;
-    }
-    // Initialize a simple averaging (blur) kernel.
-    for (int i = 0; i < kernelSize; i++) {
-        h_kernel[i] = 1.0f / kernelSize;
+        grad_output[i] = 1.0f;
     }
 
-    // Allocate device memory.
-    float* d_input, * d_output, * d_kernel, * d_d_input, * d_d_output, * d_d_kernel;
-    cudaMalloc((void**)&d_input, imageBytes);
-    cudaMalloc((void**)&d_output, imageBytes);
-    cudaMalloc((void**)&d_kernel, kernelBytes);
-    cudaMalloc((void**)&d_d_input, imageBytes);
-    cudaMalloc((void**)&d_d_output, imageBytes);
-    cudaMalloc((void**)&d_d_kernel, kernelBytes);
+    // Initialize target output (for example, a constant value of 1.0 for each pixel)
+    for (int i = 0; i < imageSize; i++) {
+        target[i] = 0.0f;
+    }
 
-    // Copy data from host to device.
-    cudaMemcpy(d_input, h_input, imageBytes, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_kernel, h_kernel, kernelBytes, cudaMemcpyHostToDevice);
-    cudaMemcpy(d_d_output, h_d_output, imageBytes, cudaMemcpyHostToDevice);
 
-    // Define grid and block dimensions for the 2D operations.
-    dim3 blockDim(16, 16);
-    dim3 gridDim((IMAGE_WIDTH + blockDim.x - 1) / blockDim.x, (IMAGE_HEIGHT + blockDim.y - 1) / blockDim.y);
-
-    // ---------------------------------------------------------------
-    // (1) Forward pass: Compute the convolution output.
-    // ---------------------------------------------------------------
-    conv2D_forward << < gridDim, blockDim >> > (d_input, d_kernel, d_output, IMAGE_WIDTH, IMAGE_HEIGHT);
-
-    // ---------------------------------------------------------------
-    // (2) Backpropagation pass:
-    //   (a) Compute gradient with respect to input.
-    // ---------------------------------------------------------------
-    conv2D_backprop_input << < gridDim, blockDim >> > (d_d_output, d_kernel, d_d_input, IMAGE_WIDTH, IMAGE_HEIGHT);
+    // Perform an initial forward pass and print the first output value
+    dim3 blockDim(BLOCK_SIZE, BLOCK_SIZE);
+    dim3 gridDim((width + BLOCK_SIZE - 1) / BLOCK_SIZE, (height + BLOCK_SIZE - 1) / BLOCK_SIZE);
+    convolution_2d_basic_kernel_forward << <gridDim, blockDim >> > (N, F, P, r, width, height);
     cudaDeviceSynchronize();
-
-    // ---------------------------------------------------------------
-    // (2) Backpropagation pass:
-    //   (b) Compute gradient with respect to the kernel.
-    //       Launch one block with one thread per kernel element.
-    // ---------------------------------------------------------------
-    conv2D_backprop_kernel << <1, kernelSize >> > (d_input, d_d_output, d_d_kernel, IMAGE_WIDTH, IMAGE_HEIGHT);
-    cudaDeviceSynchronize();
-
-    // Copy the results back to host memory.
-    cudaMemcpy(h_output, d_output, imageBytes, cudaMemcpyDeviceToHost);
-    cudaMemcpy(h_d_input, d_d_input, imageBytes, cudaMemcpyDeviceToHost);
-    cudaMemcpy(h_d_kernel, d_d_kernel, kernelBytes, cudaMemcpyDeviceToHost);
-
-    // Display a small sample of the results.
-    std::cout << "Forward convolution sample output:" << std::endl;
-    for (int y = 250; y < 255; y++) {
-        for (int x = 250; x < 255; x++) {
-            std::cout << h_output[y * IMAGE_WIDTH + x] << "\t";
+    std::cout << "Initial forward pass: First output value = " << P[0] << std::endl;
+    // Perform an initial forward pass and print the initial filter weights as a 2D matrix
+    std::cout << "Initial filter weights:" << std::endl;
+    for (int i = 0; i < 2 * r + 1; i++) {
+        for (int j = 0; j < 2 * r + 1; j++) {
+            std::cout << F[i * (2 * r + 1) + j] << " ";
         }
         std::cout << std::endl;
     }
 
-    std::cout << "\nBackpropagated input gradient sample:" << std::endl;
-    for (int y = 250; y < 255; y++) {
-        for (int x = 250; x < 255; x++) {
-            std::cout << h_d_input[y * IMAGE_WIDTH + x] << "\t";
+    // Training loop parameters
+    int numEpochs = 1000;
+    float learning_rate = 0.1f;
+
+    float loss = 0.0f;
+    // Training Loop
+    for (int epoch = 0; epoch < numEpochs; epoch++) {
+        // ----------------------------- Forward Pass -----------------------------
+        convolution_2d_basic_kernel_forward << <gridDim, blockDim >> > (N, F, P, r, width, height);
+        cudaDeviceSynchronize();
+        //std::cout << "Epoch " << epoch << ": First output value = " << P[0] << std::endl;
+
+        // --------------------------- Loss Computation ---------------------------
+       // Compute Mean Squared Error (MSE) loss and also update grad_output.
+        for (int i = 0; i < imageSize; i++) {
+            float diff = P[i] - target[i];
+            loss += diff * diff;
+            // Derivative of MSE loss: dL/dP = 2*(P - target) / imageSize
+            grad_output[i] = 2.0f * diff / imageSize;
+        }
+        loss /= imageSize;
+        //std::cout << "Epoch " << epoch << ": Loss = " << loss << std::endl;
+
+        // -------------------------- Backward Pass -------------------------------
+        // Zero out grad_F before computing new gradients
+        for (int i = 0; i < filterSize; i++) {
+            grad_F[i] = 0.0f;
+        }
+        // Launch backward kernel with one block of size (2*r+1)x(2*r+1)
+        dim3 blockDimBackward(2 * r + 1, 2 * r + 1);
+        dim3 gridDimBackward(1, 1);
+        convolution_2d_backward_kernel << <gridDimBackward, blockDimBackward >> > (N, grad_output, grad_F, r, width, height);
+        cudaDeviceSynchronize();
+
+        // -------------------------- Update Weights ------------------------------
+        update_weights_kernel << <numBlocks_F, numThreads >> > (F, grad_F, filterSize, learning_rate);
+        cudaDeviceSynchronize();
+
+        // Optionally, print the first output value and the first filter weight after the update
+        //std::cout << "Epoch " << epoch << ": First output value = " << P[0] << ", First filter weight = " << F[0] << std::endl;
+    }
+
+    // Perform an initial forward pass and print the first output value
+    convolution_2d_basic_kernel_forward << <gridDim, blockDim >> > (N, F, P, r, width, height);
+    cudaDeviceSynchronize();
+    std::cout << "Initial forward pass: FINAL output value = " << P[0] << std::endl;
+    // Perform an initial forward pass and print the initial filter weights as a 2D matrix
+    std::cout << "Initial filter weights AFTER TRAINING:" << std::endl;
+    for (int i = 0; i < 2 * r + 1; i++) {
+        for (int j = 0; j < 2 * r + 1; j++) {
+            std::cout << F[i * (2 * r + 1) + j] << " ";
         }
         std::cout << std::endl;
     }
 
-    std::cout << "\nKernel gradient:" << std::endl;
-    for (int i = 0; i < kernelSize; i++) {
-        std::cout << h_d_kernel[i] << "\t";
-    }
-    std::cout << std::endl;
+    // Printing final loss
+	std::cout << "Final loss = " << loss << std::endl;
 
-    // Clean up device and host memory.
-    delete[] h_input;
-    delete[] h_output;
-    delete[] h_d_input;
-    delete[] h_d_output;
-    delete[] h_kernel;
-    delete[] h_d_kernel;
-    cudaFree(d_input);
-    cudaFree(d_output);
-    cudaFree(d_kernel);
-    cudaFree(d_d_input);
-    cudaFree(d_d_output);
-    cudaFree(d_d_kernel);
+    // Free unified memory
+    cudaFree(N);
+    cudaFree(F);
+    cudaFree(P);
+    cudaFree(grad_output);
+    cudaFree(grad_F);
 
     return 0;
 }
-
-#endif // MAIN

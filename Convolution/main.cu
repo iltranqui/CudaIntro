@@ -5,8 +5,6 @@
 #include <ctime>
 #include <cmath>
 #include <stdio.h>
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
 #include "main_header.cuh"
 
 int main() {
@@ -15,5 +13,9 @@ int main() {
 	conv2d_deform();
 	// conv 2d pmpp
 	launchConvolution2DBasicKernel();
+	// conv 2d backpass
+	conv2d_backpass();
+	// conv_1d_host: CPU vs GPU
+	conv_1d_host();
 	return 0;
 }
