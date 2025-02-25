@@ -2,9 +2,11 @@
 
 int conv_1d_host();
 
-int conv2d_deform();
+int conv2d_deform_infer();
+int conv2d_deform_backpass();
 int conv2d_inf();
 int conv2d_backpass();
+int conv2d_deform_training_loop();
 
 int launchConvolution2DBasicKernel(int width = 5, int height = 5, int r = 1,
     float* h_N = nullptr, float* h_F = nullptr, float* h_P = nullptr,

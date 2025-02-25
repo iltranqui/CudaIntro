@@ -10,12 +10,13 @@
 int main() {
 
 	// AI conv deform
-	conv2d_deform();
+	//conv2d_deform_infer();
+	conv2d_deform_training_loop();
 	// conv 2d pmpp
-	launchConvolution2DBasicKernel();
+	//launchConvolution2DBasicKernel();
 	// conv 2d backpass
-	conv2d_backpass();
+	//conv2d_backpass();
 	// conv_1d_host: CPU vs GPU
-	conv_1d_host();
+	//conv_1d_host();
 	return 0;
 }

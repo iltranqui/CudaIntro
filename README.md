@@ -54,4 +54,25 @@ __global__ void kernel() {
 - Use `__constant__` for **read-only global data** (optimized caching).
 - Use `__device__` for **global persistent data** (but slower).
 
+# Roadmap
 
+- [x] Understand CUDA memory hierarchy
+- [ ] Implement a simple CUDA kernel
+- [ ] Optimize CUDA kernel for memory access
+- [ ] Profile CUDA kernel performance
+- [ ] Compare CPU vs GPU performance
+- [x] Conv_1D CPU vs GPU performance
+    - [ ] Easier to perform experiments (parse agrs for kernel size, stride, padding)
+- [ ] Conv_2D CPU vs GPU performance
+    - [ ] Easier to perform experiments (parse agrs for kernel size, stride, padding)
+- [ ] Conv_3D CPU vs GPU performance
+    - [ ] Easier to perform experiments (parse agrs for kernel size, stride, padding)
+- [ ] Complete MNIST Example in CUDA/C++
+
+### 23 Feb 2025
+
+- Added a Conv1D implementation in CUDA, with GPU vs CPU performance comparison
+
+### 25 Feb 2025
+
+- Added a training loop for Conv2D deformation in CUDA, with lots of comments to understand it

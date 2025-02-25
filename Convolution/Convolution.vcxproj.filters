@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CudaCompile Include="main.cu" />
+    <CudaCompile Include="conv_1d.cu">
+      <Filter>Conv_1D</Filter>
+    </CudaCompile>
+    <CudaCompile Include="conv_3d.cu">
+      <Filter>Conv_1D</Filter>
+    </CudaCompile>
+    <CudaCompile Include="conv_bookPMPP.cu">
+      <Filter>Conv_1D</Filter>
+    </CudaCompile>
+    <CudaCompile Include="conv2_back.cu">
+      <Filter>Conv_2D</Filter>
+    </CudaCompile>
+    <CudaCompile Include="conv2_deform.cu">
+      <Filter>Conv_2D</Filter>
+    </CudaCompile>
+    <CudaCompile Include="conv2d_inf.cu">
+      <Filter>Conv_2D</Filter>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{56ece082-fe5b-401f-a4cc-67afe0436d46}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Conv_1D">
+      <UniqueIdentifier>{0481e4ce-0868-4e05-b68c-5232b4eae90c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Conv_2D">
+      <UniqueIdentifier>{3908bf42-555a-4912-85ce-6f02f4c1a2ad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Conv_3D">
+      <UniqueIdentifier>{ed248063-6266-4fb4-b95e-81910971d177}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="main_header.cuh">
+      <Filter>Headers</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
