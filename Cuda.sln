@@ -3,11 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35514.174
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Cuda", "Cuda.vcxproj", "{93D0120D-E9A0-4A4C-B105-D99D44BD0396}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MNIST", "Cuda.vcxproj", "{93D0120D-E9A0-4A4C-B105-D99D44BD0396}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Convolution", "Convolution\Convolution.vcxproj", "{445AC304-5BD3-45CA-B6F2-D6D1D6998E5C}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "add_matrix", "add_matrix\add_matrix.vcxproj", "{FCC6421A-A8D2-4505-AA16-FAC2A3B62D76}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MatMul", "MatMul\MatMul.vcxproj", "{32086793-D0BB-241F-A2C0-25226C8C9AD9}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CppKernels", "..\CppKernels\CppKernels.vcxproj", "{B219B7DF-CB59-4555-A212-C6947E2F52E5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,12 +25,19 @@ Global
 		{445AC304-5BD3-45CA-B6F2-D6D1D6998E5C}.Debug|x64.Build.0 = Debug|x64
 		{445AC304-5BD3-45CA-B6F2-D6D1D6998E5C}.Release|x64.ActiveCfg = Release|x64
 		{445AC304-5BD3-45CA-B6F2-D6D1D6998E5C}.Release|x64.Build.0 = Release|x64
-		{FCC6421A-A8D2-4505-AA16-FAC2A3B62D76}.Debug|x64.ActiveCfg = Debug|x64
-		{FCC6421A-A8D2-4505-AA16-FAC2A3B62D76}.Debug|x64.Build.0 = Debug|x64
-		{FCC6421A-A8D2-4505-AA16-FAC2A3B62D76}.Release|x64.ActiveCfg = Release|x64
-		{FCC6421A-A8D2-4505-AA16-FAC2A3B62D76}.Release|x64.Build.0 = Release|x64
+		{32086793-D0BB-241F-A2C0-25226C8C9AD9}.Debug|x64.ActiveCfg = Debug|x64
+		{32086793-D0BB-241F-A2C0-25226C8C9AD9}.Debug|x64.Build.0 = Debug|x64
+		{32086793-D0BB-241F-A2C0-25226C8C9AD9}.Release|x64.ActiveCfg = Release|x64
+		{32086793-D0BB-241F-A2C0-25226C8C9AD9}.Release|x64.Build.0 = Release|x64
+		{B219B7DF-CB59-4555-A212-C6947E2F52E5}.Debug|x64.ActiveCfg = Debug|x64
+		{B219B7DF-CB59-4555-A212-C6947E2F52E5}.Debug|x64.Build.0 = Debug|x64
+		{B219B7DF-CB59-4555-A212-C6947E2F52E5}.Release|x64.ActiveCfg = Release|x64
+		{B219B7DF-CB59-4555-A212-C6947E2F52E5}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6570662D-337C-4C82-863E-94557C334DEA}
 	EndGlobalSection
 EndGlobal

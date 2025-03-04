@@ -77,26 +77,20 @@
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
+      <CodeGeneration>compute_89,sm_89</CodeGeneration>
     </CudaCompile>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <CudaCompile Include="add_vector.cu" />
-    <CudaCompile Include="cuda_kernels.cu" />
-    <CudaCompile Include="main.cu" />
-  </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="dataloader.h" />
-    <ClInclude Include="cuda kernels.cuh" />
-    <ClInclude Include="network.h" />
-    <ClInclude Include="train.h" />
+    <CudaCompile Include="MNIST\kernel.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="dataloader.cpp" />
-    <ClCompile Include="Source.cpp" />
-    <ClCompile Include="train.cpp" />
+    <ClInclude Include="MNIST\kernel.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="MNIST\main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
