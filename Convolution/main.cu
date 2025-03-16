@@ -20,5 +20,6 @@ int main() {
 	//conv_1d_host();
 	// conv_1d_padded: CPU vs GPU
 	conv_1d_padded();
+	conv_1d_padded_shared();
 	return 0;
 }

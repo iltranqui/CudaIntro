@@ -3,6 +3,7 @@
 int conv_1d_host();
 
 int conv_1d_padded(); // 1D convolution with zero padding
+int conv_1d_padded_shared(); // int convoloutiin with zero padding and shared memory
 
 int conv2d_deform_infer();
 int conv2d_deform_backpass();

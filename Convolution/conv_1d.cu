@@ -337,9 +337,9 @@ int conv_1d_padded() {
     // ============================
 
     // Define input size and kernel size
-    int input_size = 12; // Large input for performance testing
+    int input_size = 1000; // Large input for performance testing
     int kernel_size = 3;
-    int output_size = input_size - kernel_size + 1;
+    int output_size = input_size;
 
     // Allocate and initialize host memory (CPU)
     std::vector<float> h_input(input_size);
@@ -385,8 +385,12 @@ int conv_1d_padded() {
 
     auto end_gpu_padded = std::chrono::high_resolution_clock::now();
 
+    // Copy the output results to Host
+    cudaMemcpy(h_output_gpu.data(), d_output_padded, input_size * sizeof(float), cudaMemcpyDeviceToHost);
+
     // Compute GPU execution time
     double gpu_time_padded = std::chrono::duration<double, std::milli>(end_gpu_padded - start_gpu_padded).count();
+    // Check size match
 
     std::cout << "GPU Time with Zero-padding NOT SHARED: " << gpu_time_padded << " ms\n";
 
@@ -401,7 +405,90 @@ int conv_1d_padded() {
                 << " (CPU: " << h_output_cpu[i] << ", GPU: " << h_output_gpu[i] << ")\n";
             exit(EXIT_FAILURE);  // Stop execution
         }
-        std::cout << "Output[" << i << "] = " << h_output_gpu[i] << std::endl;
+        // std::cout << "Output[" << i << "] = " << h_output_gpu[i] << std::endl;
+    }
+
+    // Free device memory
+    cudaFree(d_input_padded);
+    cudaFree(d_kernel_padded);
+    cudaFree(d_output_padded);
+}
+
+int conv_1d_padded_shared() {
+    // ============================
+    // Zero-padding SHARED
+    // ============================
+
+    // Define input size and kernel size
+    int input_size = 1000; // Large input for performance testing
+    int kernel_size = 3;
+    int output_size = input_size;
+
+    // Allocate and initialize host memory (CPU)
+    std::vector<float> h_input(input_size);
+    std::vector<float> h_kernel(kernel_size);
+    std::vector<float> h_output_cpu(output_size, 0.0f);
+    std::vector<float> h_output_gpu(output_size, 0.0f);
+
+    // Initialize input and kernel with random values
+    for (int i = 0; i < input_size; i++) h_input[i] = static_cast<float>(rand()) / RAND_MAX;
+    for (int i = 0; i < kernel_size; i++) h_kernel[i] = static_cast<float>(rand()) / RAND_MAX;
+
+    // ============================
+    // CPU Execution & Timing
+    // ============================
+    auto start_cpu = std::chrono::high_resolution_clock::now();
+    conv1d_cpu_padded(h_input.data(), h_kernel.data(), h_output_cpu.data(), input_size, kernel_size);
+    auto end_cpu = std::chrono::high_resolution_clock::now();
+    double cpu_time = std::chrono::duration<double, std::milli>(end_cpu - start_cpu).count();
+
+    std::cout << "CPU Time: " << cpu_time << " ms\n";
+
+    gpu_warmup();
+
+    // Allocate device memory
+    float* d_input_padded, * d_kernel_padded, * d_output_padded;
+    cudaMalloc((void**)&d_input_padded, input_size * sizeof(float));
+    cudaMalloc((void**)&d_kernel_padded, kernel_size * sizeof(float));
+    cudaMalloc((void**)&d_output_padded, output_size * sizeof(float));
+
+    // Copy data from host to device
+    cudaMemcpy(d_input_padded, h_input.data(), input_size * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_kernel_padded, h_kernel.data(), kernel_size * sizeof(float), cudaMemcpyHostToDevice);
+
+    // GPU Timing Start
+    cudaDeviceSynchronize(); // Ensure GPU is ready
+    auto start_gpu_padded = std::chrono::high_resolution_clock::now();
+
+    // Launch kernel
+    solution_shared(d_input_padded, d_kernel_padded, d_output_padded, input_size, kernel_size);
+
+    // GPU Timing End
+    cudaDeviceSynchronize();
+
+    auto end_gpu_padded = std::chrono::high_resolution_clock::now();
+
+    // Copy the output results to Host
+    cudaMemcpy(h_output_gpu.data(), d_output_padded, input_size * sizeof(float), cudaMemcpyDeviceToHost);
+
+    // Compute GPU execution time
+    double gpu_time_padded = std::chrono::duration<double, std::milli>(end_gpu_padded - start_gpu_padded).count();
+    // Check size match
+
+    std::cout << "GPU Time with Zero-padding SHARED: " << gpu_time_padded << " ms\n";
+
+    for (int i = 0; i < output_size; i++) {
+        assert(fabs(h_output_cpu[i] - h_output_gpu[i]) < 1e-5f && "Error: GPU output does not match CPU output");
+        //std::cout << "Output[" << i << "] = " << h_output_gpu[i] << std::endl;
+    }
+
+    for (int i = 0; i < output_size; i++) {
+        if (fabs(h_output_cpu[i] - h_output_gpu[i]) >= 1e-5f) {  // Increased precision tolerance
+            std::cerr << "Error: GPU output does not match CPU output at index " << i
+                << " (CPU: " << h_output_cpu[i] << ", GPU: " << h_output_gpu[i] << ")\n";
+            exit(EXIT_FAILURE);  // Stop execution
+        }
+        // std::cout << "Output[" << i << "] = " << h_output_gpu[i] << std::endl;
     }
 
     // Free device memory
