@@ -20,6 +20,10 @@
     <CudaCompile Include="conv2d_inf.cu">
       <Filter>Conv_2D</Filter>
     </CudaCompile>
+    <CudaCompile Include="cudnn_loop_v2.cu" />
+    <CudaCompile Include="max_pooling_1d.cu">
+      <Filter>Conv_1D</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />

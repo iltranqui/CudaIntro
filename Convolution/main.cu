@@ -7,7 +7,11 @@
 #include <stdio.h>
 #include "main_header.cuh"
 
+#define CONV1D
+
 int main() {
+
+
 
 	// AI conv deform
 	//conv2d_deform_infer();
@@ -19,7 +23,17 @@ int main() {
 	// conv_1d_host: CPU vs GPU
 	//conv_1d_host();
 	// conv_1d_padded: CPU vs GPU
-	conv_1d_padded();
-	conv_1d_padded_shared();
+	//conv_1d_padded();
+	//conv_1d_padded_shared();
+	//conv_1d_cudnn();
+	// benchmarkconv 2d
+	//benchmark_convolution2d();
+
+	// cudnn loop
+	//cudnn_loop();
+
+	// max pooling 1d
+	max_pooling_1d();
+
 	return 0;
 }

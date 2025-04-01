@@ -89,3 +89,15 @@ __global__ void convolution_tiled_2d_const_mem_kernel(float* N, float* P, int wi
     }
 }
 ```
+
+## EXTERN "C" void  ?? Why use it ? 
+
+In C++, function names are mangled by the compiler to include information about their parameters and namespaces. This allows function overloading but makes it difficult to link functions with other languages, such as C or assembly. extern "C" is mainly used to ensure that functions can be called from C and to prevent C++ name mangling.
+- Use it when:
+	- You need to call C++ functions from C.
+	- You are linking with a library that expects C linkage.
+	- You are using CUDA and want to ensure interoperability.
+	- You want to create a shared library (.so or .dll) that will be used by both C and C++ programs.
+- Do not use it when:
+	- Your entire program is in C++ and does not need C compatibility.
+	- You need function overloading (which extern "C" disables).
