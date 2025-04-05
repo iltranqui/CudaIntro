@@ -25,3 +25,6 @@ int cudnn_loop();
 
 // 1 Dimensional Max Pooling
 int max_pooling_1d();
+
+// Declaration of the external CUDA max pooling function
+extern "C" void solution_max_pooling_1d(const float* input, int kernel_size, int stride, int padding, int dilation, float* output, size_t H);

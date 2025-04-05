@@ -4,6 +4,8 @@
 #include <vector>
 #include <random>
 
+// https://tensara.org/problems/max-pool-1d/
+
 // CUDA error checking macro
 #define CUDA_CHECK(call) \
     do { \
