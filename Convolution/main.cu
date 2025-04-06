@@ -33,7 +33,8 @@ int main() {
 	//cudnn_loop();
 
 	// max pooling 1d
-	max_pooling_1d();
+	//max_pooling_1d();
+	average_pooling_1d();
 
 	return 0;
 }

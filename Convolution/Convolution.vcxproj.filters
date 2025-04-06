@@ -24,6 +24,9 @@
     <CudaCompile Include="max_pooling_1d.cu">
       <Filter>Conv_1D</Filter>
     </CudaCompile>
+    <CudaCompile Include="average_pool_1d.cu">
+      <Filter>Conv_1D</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
@@ -43,8 +46,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="main_header.cuh">
-      <Filter>Headers</Filter>
-    </ClInclude>
+    <ClInclude Include="main_header.cuh" />
   </ItemGroup>
 </Project>

@@ -17,42 +17,41 @@
     } while (0)
 
 
-
 // CUDA kernel performing 1D max pooling
-__global__ void maxpool1d_kernel(const float* input, int kernel_size, int stride, int padding, int dilation, float* output, size_t H, int H_out) {
+__global__ void average_pool_1d_kernel(const float* input, int kernel_size, int stride, int padding, float* output, size_t H, int H_out) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < H_out) {
         // Start with negative infinity for the max value
-        float max_val = -INFINITY;
+        float avg_val = -INFINITY;
         for (int m = 0; m < kernel_size; m++) {
             // Calculate the input index for this kernel element
-            int index = stride * i + dilation * m - padding;
-			// If the index is out-of-bound, treat the value as -infinity -> Zero padding does this specifically
+            int index = stride * i * m - padding;
+            // If the index is out-of-bound, treat the value as -infinity -> Zero padding does this specifically
             float value = (index < 0 || index >= H) ? -INFINITY : input[index];
-            max_val = fmaxf(max_val, value);
+            avg_val = 1 / kernel_size * ()
         }
-        output[i] = max_val;
+        output[i] = avg_val;
     }
 }
 
 // Note: input and output are device pointers to float arrays
-extern "C" void solution_max_pooling_1d(const float* input, int kernel_size, int stride, int padding, int dilation, float* output, size_t H) {
+extern "C" void solution_average_pooling_1d(const float* input, int kernel_size, int stride, int padding, float* output, size_t H) {
     // Calculate output size using:
     // H_out = floor((H + 2*padding - dilation*(kernel_size-1) - 1) / stride) + 1
-    int H_out = ((H + 2 * padding - dilation * (kernel_size - 1) - 1) / stride) + 1;
+    int H_out = ((H + 2 * padding - kernel_size) / stride) + 1;
 
     // Set up grid and block dimensions
     int threadsPerBlock = 256;
     int blocksPerGrid = (H_out + threadsPerBlock - 1) / threadsPerBlock;
 
     // Launch the CUDA kernel
-    maxpool1d_kernel << <blocksPerGrid, threadsPerBlock >> > (input, kernel_size, stride, padding, dilation, output, H, H_out);
+    average_pool_1d_kernel << <blocksPerGrid, threadsPerBlock >> > (input, kernel_size, stride, padding, output, H, H_out);
 
     // Wait for the kernel to finish before returning
     cudaDeviceSynchronize();
 }
 
-void generate_random_data(std::vector<float>& data) {
+void generate_random_data_1d(std::vector<float>& data) {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<float> dist(0.0f, 1.0f);
@@ -61,7 +60,7 @@ void generate_random_data(std::vector<float>& data) {
     }
 }
 
-int max_pooling_1d() {
+int average_pooling_1d() {
     size_t H = 16;  // Length of the 1D input tensor
     int kernel_size = 3;
     int stride = 1;
@@ -69,7 +68,7 @@ int max_pooling_1d() {
     int dilation = 1;
 
     std::vector<float> h_input(H);
-    generate_random_data(h_input);
+    generate_random_data_1d(h_input);
 
     float* d_input, * d_output;
     CUDA_CHECK(cudaMalloc(&d_input, H * sizeof(float)));
@@ -77,7 +76,7 @@ int max_pooling_1d() {
     CUDA_CHECK(cudaMemcpy(d_input, h_input.data(), H * sizeof(float), cudaMemcpyHostToDevice));
 
     // Call the CUDA function
-    solution_max_pooling_1d(d_input, kernel_size, stride, padding, dilation, d_output, H);
+    solution_average_pooling_1d(d_input, kernel_size, stride, padding, d_output, H);
 
     // Copy result back to host
     std::vector<float> h_output(H);

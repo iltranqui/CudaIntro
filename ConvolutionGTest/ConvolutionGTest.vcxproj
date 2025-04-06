@@ -81,7 +81,9 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="main_gtest.cu" />
+    <CudaCompile Include="average_pooling_1D_gtest.cu" />
+    <CudaCompile Include="gtest_main.cu" />
+    <CudaCompile Include="max_pooling_1D_gtest.cu" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -92,7 +94,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Convolution\main_header.cuh" />
+    <ClInclude Include="gtest_header.cuh" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

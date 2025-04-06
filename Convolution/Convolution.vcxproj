@@ -94,6 +94,7 @@
     <CudaCompile Include="conv_1d.cu" />
     <CudaCompile Include="conv_3d.cu" />
     <CudaCompile Include="cudnn_loop_v2.cu" />
+    <CudaCompile Include="average_pool_1d.cu" />
     <CudaCompile Include="max_pooling_1d.cu" />
     <CudaCompile Include="main.cu" />
   </ItemGroup>
