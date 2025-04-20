@@ -19,6 +19,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ConvolutionGTest", "Convolu
 		{445AC304-5BD3-45CA-B6F2-D6D1D6998E5C} = {445AC304-5BD3-45CA-B6F2-D6D1D6998E5C}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DeformConvolution", "DeformConvolution\DeformConvolution.vcxproj", "{F73F072C-FF53-3567-253A-7F9D53D17D6D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -45,6 +47,10 @@ Global
 		{E48641BB-5F64-CB36-6F53-1B0E87DA4447}.Debug|x64.Build.0 = Debug|x64
 		{E48641BB-5F64-CB36-6F53-1B0E87DA4447}.Release|x64.ActiveCfg = Release|x64
 		{E48641BB-5F64-CB36-6F53-1B0E87DA4447}.Release|x64.Build.0 = Release|x64
+		{F73F072C-FF53-3567-253A-7F9D53D17D6D}.Debug|x64.ActiveCfg = Debug|x64
+		{F73F072C-FF53-3567-253A-7F9D53D17D6D}.Debug|x64.Build.0 = Debug|x64
+		{F73F072C-FF53-3567-253A-7F9D53D17D6D}.Release|x64.ActiveCfg = Release|x64
+		{F73F072C-FF53-3567-253A-7F9D53D17D6D}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
