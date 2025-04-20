@@ -11,11 +11,11 @@
 
 int main() {
 
+	// AI conv deform - Deformable Convolution with Bilinear Interpolation
+	conv2d_deform_infer();
+	conv2d_deform_training_loop();
 
-
-	// AI conv deform
-	//conv2d_deform_infer();
-	//conv2d_deform_training_loop();
+	// Other convolution implementations
 	// conv 2d pmpp
 	//launchConvolution2DBasicKernel();
 	// conv 2d backpass
@@ -34,7 +34,7 @@ int main() {
 
 	// max pooling 1d
 	//max_pooling_1d();
-	average_pooling_1d();
+	//average_pooling_1d();
 
 	return 0;
 }

@@ -11,6 +11,9 @@
     <Filter Include="Conv1D">
       <UniqueIdentifier>{d6763c83-5d1c-497d-b74e-d83b15a4cbaf}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Conv2D">
+      <UniqueIdentifier>{e8763c83-5d1c-497d-b74e-d83b15a4cbaf}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="max_pooling_1D_gtest.cu">
@@ -19,6 +22,9 @@
     <CudaCompile Include="gtest_main.cu" />
     <CudaCompile Include="average_pooling_1D_gtest.cu">
       <Filter>Conv1D</Filter>
+    </CudaCompile>
+    <CudaCompile Include="deform_conv2d_gtest.cu">
+      <Filter>Conv2D</Filter>
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>

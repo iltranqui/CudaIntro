@@ -22,13 +22,13 @@ __global__ void average_pool_1d_kernel(const float* input, int kernel_size, int 
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < H_out) {
         // Start with negative infinity for the max value
-        float avg_val = -INFINITY;
+        float avg_val = 0.0f;
         for (int m = 0; m < kernel_size; m++) {
             // Calculate the input index for this kernel element
             int index = stride * i * m - padding;
             // If the index is out-of-bound, treat the value as -infinity -> Zero padding does this specifically
-            float value = (index < 0 || index >= H) ? -INFINITY : input[index];
-            avg_val = 1 / kernel_size * ()
+            float value = (index < 0 || index >= H) ? 0.0f : input[index];
+            avg_val += value / kernel_size;
         }
         output[i] = avg_val;
     }

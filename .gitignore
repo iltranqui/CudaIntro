@@ -361,7 +361,67 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# CUDA and C++ specific
 *.png
 *.lib
 *.exe
+*.o
+*.a
+*.so
+*.dll
+*.dylib
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# MNIST dataset
 MNIST/dataset_mnist
+
+# CMake build files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+build/
+out/
+CMakeSettings.json
+
+# Build scripts
+build_convolution.bat
+build_convolution.sh
+
+# Generated files
+*.generated.*
+
+# IDE specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Dependency directories
+vendor/
+external/
+third_party/
+
+# Temporary files
+temp/
+tmp/
+
+# Log files
+logs/
+*.log
+
+# OS specific files
+.DS_Store
+Thumbs.db

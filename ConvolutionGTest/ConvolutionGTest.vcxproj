@@ -82,6 +82,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="average_pooling_1D_gtest.cu" />
+    <CudaCompile Include="deform_conv2d_gtest.cu" />
     <CudaCompile Include="gtest_main.cu" />
     <CudaCompile Include="max_pooling_1D_gtest.cu" />
   </ItemGroup>
