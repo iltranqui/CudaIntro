@@ -1,5 +1,10 @@
 # Convolution
 
+IN this folder i am implementing only CONVOLUTION related operations in CUDA.
+
+- [ ] TODO, using #define to add exeution or not of different completed implementaion of kernels
+- [ ] TODO, add more kernels for different operations
+
 ## Convolution 1D
 
 Made Layer for a 1D Max Pooling Operation with the following code: 

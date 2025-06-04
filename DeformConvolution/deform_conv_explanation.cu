@@ -512,6 +512,8 @@ int main() {
     printf("  - Using shared memory size: %d bytes\n", deform_shared_mem_size);
     printf("  - Grid dimensions: (%d, %d)\n", grid.x, grid.y);
     printf("  - Block dimensions: (%d, %d)\n", block.x, block.y);
+    printf("  - Processing entire %d x %d input matrix\n", in_h, in_w);
+    printf("  - Generating %d x %d output matrix\n", out_h, out_w);
 
     deform_conv2d<<<grid, block, deform_shared_mem_size>>>(
         d_input, d_offset, d_conv_weight, d_output,
@@ -536,28 +538,67 @@ int main() {
     cudaMemcpy(h_offset, d_offset, out_h * out_w * ksize * ksize * 2 * sizeof(float), cudaMemcpyDeviceToHost);
     printf("Offset data transfer complete: %d bytes\n", out_h * out_w * ksize * ksize * 2 * sizeof(float));
 
-    printf("\nOutput preview (first 5x5 values):\n");
-    for (int i = 0; i < 5 && i < out_h; i++) {
-        for (int j = 0; j < 5 && j < out_w; j++) {
+    // Display full output matrix dimensions
+    printf("\nFull output matrix dimensions: %d x %d\n", out_h, out_w);
+
+    // Display a preview of the output matrix
+    int preview_size = 27; // Show 5x5 preview by default
+    printf("\nOutput matrix preview (%dx%d values):\n", preview_size, preview_size);
+    for (int i = 0; i < preview_size && i < out_h; i++) {
+        for (int j = 0; j < preview_size && j < out_w; j++) {
             printf("%8.4f ", h_output[i * out_w + j]);
         }
         printf("\n");
     }
 
-    // Display offset values for a specific position
-    printf("\nOffset values for position (0,0):\n");
-    printf("Output value at (0,0): %8.4f\n", h_output[0]);
-    printf("\n  Kernel Pos |   Y-Offset |   X-Offset\n");
-    printf("------------+------------+------------\n");
+    // Display center of the output matrix if it's large enough
+    if (out_h > 10 && out_w > 10) {
+        int center_y = out_h / 2;
+        int center_x = out_w / 2;
+        printf("\nCenter of output matrix (position (%d,%d)): %8.4f\n",
+               center_y, center_x, h_output[center_y * out_w + center_x]);
+    }
 
+    // Display corner values to show the full extent of the matrix
+    if (out_h > 5 && out_w > 5) {
+        printf("\nCorner values of output matrix:\n");
+        printf("Top-left     (0,0):              %8.4f\n", h_output[0]);
+        printf("Top-right    (0,%d):             %8.4f\n", out_w-1, h_output[out_w-1]);
+        printf("Bottom-left  (%d,0):             %8.4f\n", out_h-1, h_output[(out_h-1) * out_w]);
+        printf("Bottom-right (%d,%d):            %8.4f\n", out_h-1, out_w-1, h_output[(out_h-1) * out_w + (out_w-1)]);
+    }
+
+    // Display offset values for multiple positions
+    printf("\nOffset values for selected positions:\n");
+
+    // Top-left position (0,0)
+    printf("\nPosition (0,0) - Output value: %8.4f\n", h_output[0]);
+    printf("  Kernel Pos |   Y-Offset |   X-Offset\n");
+    printf("------------+------------+------------\n");
     for (int ky = 0; ky < ksize; ky++) {
         for (int kx = 0; kx < ksize; kx++) {
-            // Calculate the offset index for position (0,0)
             int offset_idx = ((0 * out_w + 0) * ksize * ksize + ky * ksize + kx) * 2;
-
             printf("   (%d,%d)     |  %8.3f  |  %8.3f\n",
                    ky, kx,
                    h_offset[offset_idx], h_offset[offset_idx + 1]);
+        }
+    }
+
+    // Center position if matrix is large enough
+    if (out_h > 10 && out_w > 10) {
+        int center_y = out_h / 2;
+        int center_x = out_w / 2;
+        printf("\nPosition (%d,%d) - Output value: %8.4f\n",
+               center_y, center_x, h_output[center_y * out_w + center_x]);
+        printf("  Kernel Pos |   Y-Offset |   X-Offset\n");
+        printf("------------+------------+------------\n");
+        for (int ky = 0; ky < ksize; ky++) {
+            for (int kx = 0; kx < ksize; kx++) {
+                int offset_idx = ((center_y * out_w + center_x) * ksize * ksize + ky * ksize + kx) * 2;
+                printf("   (%d,%d)     |  %8.3f  |  %8.3f\n",
+                       ky, kx,
+                       h_offset[offset_idx], h_offset[offset_idx + 1]);
+            }
         }
     }
 

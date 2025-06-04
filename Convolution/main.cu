@@ -7,13 +7,16 @@
 #include <stdio.h>
 #include "main_header.cuh"
 
-#define CONV1D
+
 
 int main() {
-
 	// AI conv deform - Deformable Convolution with Bilinear Interpolation
+#ifdef CONV2D_DEFORM_KERNEL
 	conv2d_deform_infer();
+#endif
+#ifdef CONV2D_DEFORM_TRAINING_LOOP
 	conv2d_deform_training_loop();
+#endif
 
 	// Other convolution implementations
 	// conv 2d pmpp
