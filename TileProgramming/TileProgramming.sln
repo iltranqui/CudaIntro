@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36429.23 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TileProgramming", "TileProgramming.vcxproj", "{722A5907-CAF8-C65C-9EBB-BFDC96537B04}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{722A5907-CAF8-C65C-9EBB-BFDC96537B04}.Debug|x64.ActiveCfg = Debug|x64
+		{722A5907-CAF8-C65C-9EBB-BFDC96537B04}.Debug|x64.Build.0 = Debug|x64
+		{722A5907-CAF8-C65C-9EBB-BFDC96537B04}.Release|x64.ActiveCfg = Release|x64
+		{722A5907-CAF8-C65C-9EBB-BFDC96537B04}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F513E212-3542-412A-8548-FD598EAA6F06}
+	EndGlobalSection
+EndGlobal
