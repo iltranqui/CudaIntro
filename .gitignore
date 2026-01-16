@@ -381,6 +381,9 @@ FodyWeavers.xsd
 *.su
 *.idb
 *.pdb
+quantization/gemm_suite
+quantization/bf16_cublas
+quantization/fp8_cudnn
 
 # MNIST dataset
 MNIST/dataset_mnist
@@ -426,3 +429,5 @@ logs/
 # OS specific files
 .DS_Store
 Thumbs.db
+
+include/
