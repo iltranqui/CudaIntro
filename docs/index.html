@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Darknet Layer Diagrams</title>
+  <style>
+    :root { color-scheme: light; --ink:#17202a; --muted:#5d6d7e; --line:#d6dde6; --panel:#f7f9fc; --bg:#fff; }
+    * { box-sizing: border-box; }
+    body { margin:0; font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif; color:var(--ink); background:var(--bg); }
+    header, main, footer { max-width:1120px; margin:auto; padding:28px 20px; }
+    header { border-bottom:1px solid var(--line); }
+    h1 { margin:0 0 8px; font-size:clamp(2rem,4vw,3.5rem); letter-spacing:0; }
+    p { color:var(--muted); margin:0; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; margin-top:20px; }
+    .card { border:1px solid var(--line); border-radius:8px; padding:18px; background:var(--panel); min-height:230px; display:flex; flex-direction:column; gap:12px; }
+    .badge { width:max-content; padding:4px 9px; border-radius:999px; color:#fff; font-size:.78rem; font-weight:700; }
+    .orange { background:#ff6b35; } .purple { background:#9b59b6; } .red { background:#e74c3c; }
+    .green { background:#27ae60; } .teal { background:#00a6a6; } .blue { background:#4a90d9; }
+    h2 { margin:0; font-size:1.25rem; }
+    ul { margin:0; padding-left:18px; color:var(--muted); }
+    a { color:#145da0; font-weight:700; text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    .open { margin-top:auto; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Darknet Layer Diagrams</h1>
+    <p>Interactive, self-contained visual walkthroughs for the newer neural-network layers in <code>src-lib/</code>.</p>
+  </header>
+  <main>
+    <div class="grid">
+      <article class="card">
+        <span class="badge purple">30 steps</span>
+        <h2>Swin Transformer</h2>
+        <p>Windowed multi-head attention with optional cyclic shift, local windows, residuals, and FFN.</p>
+        <ul><li><code>filters</code></li><li><code>size</code></li><li><code>heads</code></li><li><code>shift</code></li></ul>
+        <a class="open" href="transformer_layer.html">Open diagram</a>
+      </article>
+      <article class="card">
+        <span class="badge blue">24 steps</span>
+        <h2>Vision Transformer</h2>
+        <p>Global attention over every spatial token with absolute positional embeddings and O(T^2) score memory.</p>
+        <ul><li><code>filters</code></li><li><code>heads</code></li><li><code>ffn_ratio</code></li><li><code>activation</code></li></ul>
+        <a class="open" href="vit_layer.html">Open diagram</a>
+      </article>
+      <article class="card">
+        <span class="badge red">9 steps</span>
+        <h2>DCNv4</h2>
+        <p>Flash deformable aggregation with learned offsets, sample weights, grouped bilinear sampling, and fixed C=N.</p>
+        <ul><li><code>groups</code></li><li><code>offset_scale</code></li><li><code>remove_center</code></li><li><code>softmax</code></li></ul>
+        <a class="open" href="dcnv4_layer.html">Open diagram</a>
+      </article>
+      <article class="card">
+        <span class="badge green">7 steps</span>
+        <h2>Deconvolutional</h2>
+        <p>Transposed convolution that expands spatial resolution through zero-interleaving, GEMM, bias, and activation.</p>
+        <ul><li><code>filters</code></li><li><code>size</code></li><li><code>stride</code></li><li><code>activation</code></li></ul>
+        <a class="open" href="deconvolutional_layer.html">Open diagram</a>
+      </article>
+      <article class="card">
+        <span class="badge teal">14 steps</span>
+        <h2>Clifford</h2>
+        <p>Local algebraic interactions using cyclic channel shifts, wedge and inner products, layer scale, and residual flow.</p>
+        <ul><li><code>shifts</code></li><li><code>inner_shifts</code></li><li><code>drop_path</code></li><li><code>layerscale_init</code></li></ul>
+        <a class="open" href="clifford_layer.html">Open diagram</a>
+      </article>
+      <article class="card">
+        <span class="badge orange">14 steps</span>
+        <h2>Graph Convolutional</h2>
+        <p>Local graph message passing over KxK neighborhoods with learned attention or uniform edge weights.</p>
+        <ul><li><code>size</code></li><li><code>stride</code></li><li><code>edge_mode</code></li><li><code>use_self</code></li></ul>
+        <a class="open" href="graph_conv_layer.html">Open diagram</a>
+        <a href="graph_conv_layer.md">Open guide</a>
+      </article>
+    </div>
+  </main>
+  <footer><p>Open any page directly from disk; no server is required.</p></footer>
+</body>
+</html>

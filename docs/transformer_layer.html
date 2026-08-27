@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Transformer Layer Diagram</title>
+  <style>
+    :root{--ink:#16202a;--muted:#5d6d7e;--line:#d6dde6;--bg:#fff;--panel:#f8fafc;--input:#ff8c55;--mid:#5ba4e8;--out:#3ecfcf;--ln:#f5a623;--attn:#9b59b6;--ffn:#27ae60;--res:#95a5a6}
+    *{box-sizing:border-box} body{margin:0;font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink);background:var(--bg)} header,main,footer{max-width:1120px;margin:auto;padding:24px 20px} header{border-bottom:1px solid var(--line)} h1{margin:0 0 8px;font-size:clamp(2rem,4vw,3.25rem);letter-spacing:0} h2{margin:24px 0 10px}.nav{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.nav a,.back{color:#145da0;font-weight:700;text-decoration:none}.quickref{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}.box{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:16px} table{width:100%;border-collapse:collapse;font-size:.92rem}td,th{border-bottom:1px solid var(--line);padding:7px;text-align:left}.phase{margin:28px 0 12px;padding:8px 12px;border-left:5px solid var(--attn);background:#f4edf7;font-weight:800}.step{display:grid;grid-template-columns:220px 1fr;gap:18px;margin:14px 0;padding:16px;border:1px solid var(--line);border-radius:8px;background:#fff;opacity:0;transform:translateY(30px);transition:.3s ease}.step.visible{opacity:1;transform:none}.num{font-weight:800;color:#334}.step h3{margin:0 0 6px}.step p{margin:0;color:var(--muted)}svg{width:100%;height:auto}.face-front.input{fill:#ff8c55;stroke:#c0622a}.face-top.input{fill:#ffab7f;stroke:#c0622a}.face-right.input{fill:#d4623a;stroke:#c0622a}.face-front.intermediate{fill:#5ba4e8;stroke:#2c6fab}.face-top.intermediate{fill:#85bef0;stroke:#2c6fab}.face-right.intermediate{fill:#3a7dc4;stroke:#2c6fab}.face-front.output{fill:#3ecfcf;stroke:#1a9e9e}.face-top.output{fill:#72e0e0;stroke:#1a9e9e}.face-right.output{fill:#1ea5a5;stroke:#1a9e9e}.op{rx:8;stroke-width:2}.normalization{fill:var(--ln);stroke:#c07800}.attention{fill:var(--attn);stroke:#6c3483}.ffn{fill:var(--ffn);stroke:#1a7a42}.residual{fill:var(--res);stroke:#707b7c}.arrow{stroke:#555;stroke-width:2;stroke-dasharray:120;stroke-dashoffset:120;transition:stroke-dashoffset .5s ease .3s}.visible .arrow{stroke-dashoffset:0}.label{font-size:12px;fill:#223;font-weight:700}.callout{border-left:5px solid var(--attn);background:#f4edf7;padding:14px;border-radius:8px}.architecture{margin:32px auto;max-width:860px;padding:24px;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:0 4px 14px rgba(22,32,42,.08)}.architecture svg{display:block;width:100%;height:auto}.architecture figcaption{margin-top:12px;text-align:center;font-size:.92rem;color:var(--muted);font-style:italic}@media(max-width:760px){.step{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<header>
+  <a class="back" href="index.html">Layer diagram index</a>
+  <h1>Transformer Layer</h1>
+  <p>Swin-style windowed attention: pad, shift, partition, attend inside windows, restore spatial layout.</p>
+  <nav class="nav"><a href="vit_layer.html">ViT</a><a href="dcnv4_layer.html">DCNv4</a><a href="deconvolutional_layer.html">Deconvolutional</a><a href="clifford_layer.html">Clifford</a><a href="graph_conv_layer.html">Graph Conv</a></nav>
+</header>
+<main>
+<section class="quickref">
+  <div class="box"><h2>CFG Quickref</h2><table><tr><th>Param</th><th>Meaning</th></tr><tr><td><code>filters</code></td><td>Output channels N</td></tr><tr><td><code>size</code></td><td>Window side M</td></tr><tr><td><code>heads</code></td><td>Attention heads</td></tr><tr><td><code>shift</code></td><td>Cyclic shift by M/2</td></tr><tr><td><code>ffn_ratio</code></td><td>MLP hidden multiplier</td></tr></table></div>
+  <div class="box"><h2>Legend</h2><p>3D boxes are tensors, purple blocks are attention, amber is LayerNorm, green is projection/FFN, gray is residual merge. Heatmaps represent T by T score matrices.</p></div>
+</section>
+
+<figure class="architecture">
+<svg viewBox="0 0 860 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Global vs Windowed self-attention comparison">
+<defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#16202a"/></marker></defs>
+<style>
+  .ttl{font:700 17px system-ui,sans-serif;fill:#16202a;text-anchor:middle}
+  .sub2{font:500 12px system-ui,sans-serif;fill:#5d6d7e;text-anchor:middle}
+  .lab{font:600 12px system-ui,sans-serif;fill:#16202a;text-anchor:middle}
+  .key{font:700 13px system-ui,sans-serif;text-anchor:middle}
+  .eq{font:600 14px ui-monospace,Menlo,Consolas,monospace;fill:#145da0;text-anchor:middle}
+</style>
+<line x1="430" y1="10" x2="430" y2="550" stroke="#d6dde6" stroke-width="2" stroke-dasharray="6 4"/>
+
+<!-- LEFT: Global (ViT) -->
+<text class="ttl" x="215" y="34">Global attention (ViT)</text>
+<text class="sub2" x="215" y="52">every Q attends every K · O(T²)</text>
+
+<!-- 6x6 token grid centered at 215, cell 28 → 168x168, x=131-299, y=82-250 -->
+<g>
+  <!-- attention lines from query (centered cell row=2,col=2 → center at 131+2.5*28=201, y=82+2.5*28=152) -->
+  <g stroke="#9b59b6" stroke-width="1" stroke-opacity="0.5" fill="none">
+    <!-- generate lines from (201,152) to all 36 token centers; skip self -->
+    <!-- row 0 -->
+    <line x1="201" y1="152" x2="145" y2="96"/><line x1="201" y1="152" x2="173" y2="96"/><line x1="201" y1="152" x2="201" y2="96"/><line x1="201" y1="152" x2="229" y2="96"/><line x1="201" y1="152" x2="257" y2="96"/><line x1="201" y1="152" x2="285" y2="96"/>
+    <!-- row 1 -->
+    <line x1="201" y1="152" x2="145" y2="124"/><line x1="201" y1="152" x2="173" y2="124"/><line x1="201" y1="152" x2="201" y2="124"/><line x1="201" y1="152" x2="229" y2="124"/><line x1="201" y1="152" x2="257" y2="124"/><line x1="201" y1="152" x2="285" y2="124"/>
+    <!-- row 2 (skip self at 201,152) -->
+    <line x1="201" y1="152" x2="145" y2="152"/><line x1="201" y1="152" x2="173" y2="152"/><line x1="201" y1="152" x2="229" y2="152"/><line x1="201" y1="152" x2="257" y2="152"/><line x1="201" y1="152" x2="285" y2="152"/>
+    <!-- row 3 -->
+    <line x1="201" y1="152" x2="145" y2="180"/><line x1="201" y1="152" x2="173" y2="180"/><line x1="201" y1="152" x2="201" y2="180"/><line x1="201" y1="152" x2="229" y2="180"/><line x1="201" y1="152" x2="257" y2="180"/><line x1="201" y1="152" x2="285" y2="180"/>
+    <!-- row 4 -->
+    <line x1="201" y1="152" x2="145" y2="208"/><line x1="201" y1="152" x2="173" y2="208"/><line x1="201" y1="152" x2="201" y2="208"/><line x1="201" y1="152" x2="229" y2="208"/><line x1="201" y1="152" x2="257" y2="208"/><line x1="201" y1="152" x2="285" y2="208"/>
+    <!-- row 5 -->
+    <line x1="201" y1="152" x2="145" y2="236"/><line x1="201" y1="152" x2="173" y2="236"/><line x1="201" y1="152" x2="201" y2="236"/><line x1="201" y1="152" x2="229" y2="236"/><line x1="201" y1="152" x2="257" y2="236"/><line x1="201" y1="152" x2="285" y2="236"/>
+  </g>
+  <!-- token dots -->
+  <g fill="#d6e6ff" stroke="#2c6fab" stroke-width="1.5">
+    <circle cx="145" cy="96" r="7"/><circle cx="173" cy="96" r="7"/><circle cx="201" cy="96" r="7"/><circle cx="229" cy="96" r="7"/><circle cx="257" cy="96" r="7"/><circle cx="285" cy="96" r="7"/>
+    <circle cx="145" cy="124" r="7"/><circle cx="173" cy="124" r="7"/><circle cx="201" cy="124" r="7"/><circle cx="229" cy="124" r="7"/><circle cx="257" cy="124" r="7"/><circle cx="285" cy="124" r="7"/>
+    <circle cx="145" cy="152" r="7"/><circle cx="173" cy="152" r="7"/><circle cx="229" cy="152" r="7"/><circle cx="257" cy="152" r="7"/><circle cx="285" cy="152" r="7"/>
+    <circle cx="145" cy="180" r="7"/><circle cx="173" cy="180" r="7"/><circle cx="201" cy="180" r="7"/><circle cx="229" cy="180" r="7"/><circle cx="257" cy="180" r="7"/><circle cx="285" cy="180" r="7"/>
+    <circle cx="145" cy="208" r="7"/><circle cx="173" cy="208" r="7"/><circle cx="201" cy="208" r="7"/><circle cx="229" cy="208" r="7"/><circle cx="257" cy="208" r="7"/><circle cx="285" cy="208" r="7"/>
+    <circle cx="145" cy="236" r="7"/><circle cx="173" cy="236" r="7"/><circle cx="201" cy="236" r="7"/><circle cx="229" cy="236" r="7"/><circle cx="257" cy="236" r="7"/><circle cx="285" cy="236" r="7"/>
+  </g>
+  <!-- query token highlighted -->
+  <circle cx="201" cy="152" r="9" fill="#9b59b6" stroke="#6c3483" stroke-width="2"/>
+</g>
+
+<text class="lab" x="215" y="276">Q connects to all 35 other tokens</text>
+<text class="eq" x="215" y="318">score matrix:  T × T</text>
+<text class="sub2" x="215" y="338">T = H · W (whole feature map)</text>
+
+<rect x="40" y="370" width="350" height="160" rx="8" fill="#f4edf7" stroke="#9b59b6"/>
+<text class="key" x="215" y="394" fill="#6c3483">Pros / Cons</text>
+<text class="sub2" x="215" y="418">+ unrestricted long-range mixing</text>
+<text class="sub2" x="215" y="438">+ true global receptive field per layer</text>
+<text class="sub2" x="215" y="464">− memory blows up at high res</text>
+<text class="sub2" x="215" y="484">  e.g. 52×52 → T = 2,704 → T² ≈ 7.3M / head</text>
+<text class="sub2" x="215" y="510">− every layer is O(T²)</text>
+
+<!-- RIGHT: Windowed (Swin) -->
+<text class="ttl" x="645" y="34">Windowed attention (Swin)</text>
+<text class="sub2" x="645" y="52">Q attends inside its M×M window · O(T·M²)</text>
+
+<!-- 6x6 grid divided into 4 windows of 3x3 (M=3), centered at x=645 -->
+<!-- cells 28, total 168x168, x=561-729, y=82-250 -->
+<g>
+  <!-- window borders: 2 thick lines splitting 6 cells in half (after col/row 3) -->
+  <!-- attention lines (within each window's queries to its 8 windowmates) -->
+  <g stroke="#9b59b6" stroke-width="1" stroke-opacity="0.55" fill="none">
+    <!-- Window TL: query at cell (1,1) center = (561+1.5*28=603, 82+1.5*28=124) → connects to other 8 in 3x3 block (rows0-2,cols0-2) -->
+    <line x1="603" y1="124" x2="575" y2="96"/><line x1="603" y1="124" x2="603" y2="96"/><line x1="603" y1="124" x2="631" y2="96"/>
+    <line x1="603" y1="124" x2="575" y2="124"/><line x1="603" y1="124" x2="631" y2="124"/>
+    <line x1="603" y1="124" x2="575" y2="152"/><line x1="603" y1="124" x2="603" y2="152"/><line x1="603" y1="124" x2="631" y2="152"/>
+    <!-- Window TR: query at (4,1) → x=561+4.5*28=687, y=124 -->
+    <line x1="687" y1="124" x2="659" y2="96"/><line x1="687" y1="124" x2="687" y2="96"/><line x1="687" y1="124" x2="715" y2="96"/>
+    <line x1="687" y1="124" x2="659" y2="124"/><line x1="687" y1="124" x2="715" y2="124"/>
+    <line x1="687" y1="124" x2="659" y2="152"/><line x1="687" y1="124" x2="687" y2="152"/><line x1="687" y1="124" x2="715" y2="152"/>
+    <!-- Window BL: query at (1,4) → x=603, y=82+4.5*28=208 -->
+    <line x1="603" y1="208" x2="575" y2="180"/><line x1="603" y1="208" x2="603" y2="180"/><line x1="603" y1="208" x2="631" y2="180"/>
+    <line x1="603" y1="208" x2="575" y2="208"/><line x1="603" y1="208" x2="631" y2="208"/>
+    <line x1="603" y1="208" x2="575" y2="236"/><line x1="603" y1="208" x2="603" y2="236"/><line x1="603" y1="208" x2="631" y2="236"/>
+    <!-- Window BR: query at (4,4) → x=687, y=208 -->
+    <line x1="687" y1="208" x2="659" y2="180"/><line x1="687" y1="208" x2="687" y2="180"/><line x1="687" y1="208" x2="715" y2="180"/>
+    <line x1="687" y1="208" x2="659" y2="208"/><line x1="687" y1="208" x2="715" y2="208"/>
+    <line x1="687" y1="208" x2="659" y2="236"/><line x1="687" y1="208" x2="687" y2="236"/><line x1="687" y1="208" x2="715" y2="236"/>
+  </g>
+  <!-- token dots -->
+  <g fill="#d6e6ff" stroke="#2c6fab" stroke-width="1.5">
+    <circle cx="575" cy="96" r="7"/><circle cx="603" cy="96" r="7"/><circle cx="631" cy="96" r="7"/><circle cx="659" cy="96" r="7"/><circle cx="687" cy="96" r="7"/><circle cx="715" cy="96" r="7"/>
+    <circle cx="575" cy="124" r="7"/><circle cx="631" cy="124" r="7"/><circle cx="659" cy="124" r="7"/><circle cx="715" cy="124" r="7"/>
+    <circle cx="575" cy="152" r="7"/><circle cx="603" cy="152" r="7"/><circle cx="631" cy="152" r="7"/><circle cx="659" cy="152" r="7"/><circle cx="687" cy="152" r="7"/><circle cx="715" cy="152" r="7"/>
+    <circle cx="575" cy="180" r="7"/><circle cx="603" cy="180" r="7"/><circle cx="631" cy="180" r="7"/><circle cx="659" cy="180" r="7"/><circle cx="687" cy="180" r="7"/><circle cx="715" cy="180" r="7"/>
+    <circle cx="575" cy="208" r="7"/><circle cx="631" cy="208" r="7"/><circle cx="659" cy="208" r="7"/><circle cx="715" cy="208" r="7"/>
+    <circle cx="575" cy="236" r="7"/><circle cx="603" cy="236" r="7"/><circle cx="631" cy="236" r="7"/><circle cx="659" cy="236" r="7"/><circle cx="687" cy="236" r="7"/><circle cx="715" cy="236" r="7"/>
+  </g>
+  <!-- queries highlighted -->
+  <g fill="#9b59b6" stroke="#6c3483" stroke-width="2">
+    <circle cx="603" cy="124" r="9"/><circle cx="687" cy="124" r="9"/><circle cx="603" cy="208" r="9"/><circle cx="687" cy="208" r="9"/>
+  </g>
+  <!-- thick window borders: vertical between col 2 and 3, horizontal between row 2 and 3 -->
+  <g stroke="#c0622a" stroke-width="3" fill="none">
+    <rect x="561" y="82" width="84" height="84"/>
+    <rect x="645" y="82" width="84" height="84"/>
+    <rect x="561" y="166" width="84" height="84"/>
+    <rect x="645" y="166" width="84" height="84"/>
+  </g>
+</g>
+
+<text class="lab" x="645" y="276">each Q connects to its 8 windowmates only</text>
+<text class="eq" x="645" y="318">score matrix per window:  M² × M²</text>
+<text class="sub2" x="645" y="338">M = size · Wn = T / (M·M) windows in batch</text>
+
+<rect x="470" y="370" width="350" height="160" rx="8" fill="#fff5e6" stroke="#c07800"/>
+<text class="key" x="645" y="394" fill="#c07800">Pros / Cons</text>
+<text class="sub2" x="645" y="418">+ linear in T:  O(T·M²)  vs  O(T²)</text>
+<text class="sub2" x="645" y="438">+ same self-attention kernel reused</text>
+<text class="sub2" x="645" y="464">− no cross-window mixing on its own</text>
+<text class="sub2" x="645" y="484">  → fixed by alternating shift=1 layers</text>
+<text class="sub2" x="645" y="510">  (windows roll by ⌊M/2⌋ → new neighbors)</text>
+</svg>
+<figcaption><strong>Global vs Windowed attention.</strong> ViT lets every token attend everywhere (quadratic). Swin restricts attention to a fixed-size M×M window (linear in T) and recovers cross-window communication by shifting the window grid by ⌊M/2⌋ on alternating layers.</figcaption>
+</figure>
+
+<figure class="architecture">
+<svg viewBox="0 0 820 1820" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Swin transformer layer architecture">
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#16202a"/></marker></defs>
+<style>
+  .blk{stroke-width:2}
+  .lbl{font:600 15px system-ui,sans-serif;fill:#16202a;text-anchor:middle}
+  .sub{font:500 12px system-ui,sans-serif;fill:#5d6d7e;text-anchor:middle}
+  .tag{font:600 11px system-ui,sans-serif;fill:#5d6d7e;text-anchor:middle}
+  .dim{font:600 12px ui-monospace,Menlo,Consolas,monospace;fill:#145da0;text-anchor:start}
+  .dimC{font:600 12px ui-monospace,Menlo,Consolas,monospace;fill:#145da0;text-anchor:middle}
+  .wire{fill:none;stroke:#16202a;stroke-width:2}
+  .skip{fill:none;stroke:#9b59b6;stroke-width:2;stroke-dasharray:6 4}
+</style>
+
+<!-- Input -->
+<rect class="blk" x="300" y="40" width="200" height="60" rx="10" fill="#ff8c55" stroke="#c0622a"/>
+<text class="lbl" x="400" y="68">Input</text>
+<text class="sub" x="400" y="86">spatial feature map</text>
+<path class="wire" d="M400 100 V180" marker-end="url(#arr)"/>
+<text class="dim" x="412" y="148">[B, C, H, W]</text>
+
+<!-- Channel align -->
+<rect class="blk" x="280" y="180" width="240" height="56" rx="10" fill="#d6f0e0" stroke="#1a7a42"/>
+<text class="lbl" x="400" y="206">Project C → N</text>
+<text class="sub" x="400" y="224">1×1 (only if C ≠ filters)</text>
+<path class="wire" d="M400 236 V296" marker-end="url(#arr)"/>
+<text class="dim" x="412" y="272">[B, N, H, W]</text>
+
+<!-- Pad -->
+<rect class="blk" x="280" y="296" width="240" height="56" rx="10" fill="#fff" stroke="#5d6d7e"/>
+<text class="lbl" x="400" y="322">Pad to multiples of M</text>
+<text class="sub" x="400" y="340">Hp = ⌈H/M⌉·M, Wp = ⌈W/M⌉·M</text>
+<path class="wire" d="M400 352 V412" marker-end="url(#arr)"/>
+<text class="dim" x="412" y="388">[B, N, Hp, Wp]</text>
+
+<!-- Cyclic shift -->
+<rect class="blk" x="280" y="412" width="240" height="56" rx="10" fill="#fff5e6" stroke="#c07800"/>
+<text class="lbl" x="400" y="438">Cyclic shift ⌊M/2⌋</text>
+<text class="sub" x="400" y="456">when shift=1 (alternating layers)</text>
+<path class="wire" d="M400 468 V528" marker-end="url(#arr)"/>
+<text class="dim" x="412" y="504">[B, N, Hp, Wp]</text>
+
+<!-- Window partition -->
+<rect class="blk" x="280" y="528" width="240" height="80" rx="10" fill="#d6e6ff" stroke="#2c6fab"/>
+<text class="lbl" x="400" y="556">Window partition</text>
+<text class="sub" x="400" y="574">split into M×M windows · flatten to tokens</text>
+<text class="sub" x="400" y="592">Wn = (Hp · Wp) / (M · M)</text>
+
+<circle cx="400" cy="640" r="4" fill="#16202a"/>
+<path class="wire" d="M400 608 V640"/>
+<text class="dim" x="412" y="668">[B·Wn, T, N]   T = M·M</text>
+<path class="wire" d="M400 640 V710" marker-end="url(#arr)"/>
+
+<!-- LN1 -->
+<rect class="blk" x="300" y="710" width="200" height="56" rx="10" fill="#ffe6b3" stroke="#c07800"/>
+<text class="lbl" x="400" y="744">LayerNorm</text>
+<path class="wire" d="M400 766 V820" marker-end="url(#arr)"/>
+<text class="dim" x="412" y="802">[B·Wn, T, N]</text>
+
+<!-- Window MHSA -->
+<rect class="blk" x="200" y="820" width="400" height="190" rx="10" fill="#e9d6f0" stroke="#6c3483"/>
+<text class="lbl" x="400" y="850">Window Multi-Head Self-Attention</text>
+<text class="sub" x="400" y="870">attend only inside each M×M window</text>
+<g transform="translate(254 890)">
+  <rect x="0" y="0" width="60" height="32" rx="4" fill="#9b59b6" stroke="#6c3483"/>
+  <text class="lbl" x="30" y="22" fill="#fff">Q</text>
+  <rect x="76" y="0" width="60" height="32" rx="4" fill="#9b59b6" stroke="#6c3483"/>
+  <text class="lbl" x="106" y="22" fill="#fff">K</text>
+  <rect x="152" y="0" width="60" height="32" rx="4" fill="#9b59b6" stroke="#6c3483"/>
+  <text class="lbl" x="182" y="22" fill="#fff">V</text>
+</g>
+<text class="dimC" x="400" y="945">each: [B·Wn, h, T, d]   d = N/h</text>
+<text class="sub" x="400" y="970">QKᵀ/√d → mask(shift) → softmax → ·V → Wo</text>
+<text class="sub" x="400" y="990">scores per head: [B·Wn, h, T, T]   (T = M·M, small)</text>
+<path class="wire" d="M400 1010 V1080" marker-end="url(#arr)"/>
+<text class="dim" x="412" y="1054">[B·Wn, T, N]</text>
+
+<!-- Add 1 -->
+<circle class="blk" cx="400" cy="1100" r="22" fill="#fff" stroke="#16202a"/>
+<text class="lbl" x="400" y="1106">+</text>
+<circle cx="400" cy="1140" r="4" fill="#16202a"/>
+<path class="wire" d="M400 1122 V1180" marker-end="url(#arr)"/>
+<text class="dim" x="412" y="1158">[B·Wn, T, N]</text>
+
+<!-- LN2 -->
+<rect class="blk" x="300" y="1180" width="200" height="56" rx="10" fill="#ffe6b3" stroke="#c07800"/>
+<text class="lbl" x="400" y="1214">LayerNorm</text>
+<path class="wire" d="M400 1236 V1300" marker-end="url(#arr)"/>
+<text class="dim" x="412" y="1276">[B·Wn, T, N]</text>
+
+<!-- FFN -->
+<rect class="blk" x="260" y="1300" width="280" height="130" rx="10" fill="#d6f0e0" stroke="#1a7a42"/>
+<text class="lbl" x="400" y="1330">Feed-Forward</text>
+<text class="sub" x="400" y="1352">FC1 → activation → FC2</text>
+<text class="dimC" x="400" y="1380">[B·Wn, T, N] → [B·Wn, T, N·r] → [B·Wn, T, N]</text>
+<text class="sub" x="400" y="1402">r = ffn_ratio</text>
+<path class="wire" d="M400 1430 V1490" marker-end="url(#arr)"/>
+<text class="dim" x="412" y="1466">[B·Wn, T, N]</text>
+
+<!-- Add 2 -->
+<circle class="blk" cx="400" cy="1510" r="22" fill="#fff" stroke="#16202a"/>
+<text class="lbl" x="400" y="1516">+</text>
+<path class="wire" d="M400 1532 V1592" marker-end="url(#arr)"/>
+<text class="dim" x="412" y="1568">[B·Wn, T, N]</text>
+
+<!-- Spatial restore (combined) -->
+<rect class="blk" x="240" y="1592" width="320" height="100" rx="10" fill="#fff" stroke="#5d6d7e"/>
+<text class="lbl" x="400" y="1620">Spatial restore</text>
+<text class="sub" x="400" y="1642">window-merge → reverse cyclic shift → crop H, W</text>
+<text class="sub" x="400" y="1660">undo all bookkeeping</text>
+<text class="dimC" x="400" y="1684">[B·Wn, T, N] → [B, N, Hp, Wp] → [B, N, H, W]</text>
+<path class="wire" d="M400 1692 V1740" marker-end="url(#arr)"/>
+
+<!-- Output -->
+<rect class="blk" x="300" y="1740" width="200" height="60" rx="10" fill="#3ecfcf" stroke="#1a9e9e"/>
+<text class="lbl" x="400" y="1768">Output</text>
+<text class="sub" x="400" y="1786">[B, N, H, W]</text>
+
+<!-- Skip 1: bypass MHSA, from tap (400,640) → right → down to ⊕ at (400,1100) -->
+<path class="skip" d="M400 640 H660 Q680 640 680 660 V1080 Q680 1100 660 1100 H422" marker-end="url(#arr)"/>
+<text class="tag" x="704" y="870" transform="rotate(90 704 870)">residual (skip MHSA)</text>
+
+<!-- Skip 2: bypass FFN, from tap (400,1140) → right → down to ⊕ at (400,1510) -->
+<path class="skip" d="M400 1140 H720 Q740 1140 740 1160 V1490 Q740 1510 720 1510 H422" marker-end="url(#arr)"/>
+<text class="tag" x="764" y="1320" transform="rotate(90 764 1320)">residual (skip FFN)</text>
+
+</svg>
+<figcaption>Swin transformer encoder layer. Spatial bookkeeping (pad → optional cyclic shift → window partition) brackets the standard Pre-LN attention + FFN block; restore steps undo it before writing the output.</figcaption>
+</figure>
+
+<section class="callout"><h2>Backward Summary</h2><p>Backprop reverses these checkpoints: crop and window restore first, then both residual paths, FFN, output projection, attention softmax and scores, Q/K/V projections, LayerNorm, and finally padding/shift bookkeeping.</p></section>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+<g id="tensor-input"><polygon class="face-top input" points="34,34 58,22 138,22 114,34"/><polygon class="face-front input" points="34,34 114,34 114,78 34,78"/><polygon class="face-right input" points="114,34 138,22 138,66 114,78"/></g>
+<g id="tensor-mid"><polygon class="face-top intermediate" points="34,34 58,22 138,22 114,34"/><polygon class="face-front intermediate" points="34,34 114,34 114,78 34,78"/><polygon class="face-right intermediate" points="114,34 138,22 138,66 114,78"/></g>
+<g id="tensor-output"><polygon class="face-top output" points="34,34 58,22 138,22 114,34"/><polygon class="face-front output" points="34,34 114,34 114,78 34,78"/><polygon class="face-right output" points="114,34 138,22 138,66 114,78"/></g>
+<g id="heatmap"><g stroke="#fff"><rect x="62" y="26" width="16" height="16" fill="#eadcf0"/><rect x="78" y="26" width="16" height="16" fill="#b879cf"/><rect x="94" y="26" width="16" height="16" fill="#9b59b6"/><rect x="110" y="26" width="16" height="16" fill="#d8b6e6"/><rect x="62" y="42" width="16" height="16" fill="#9b59b6"/><rect x="78" y="42" width="16" height="16" fill="#eadcf0"/><rect x="94" y="42" width="16" height="16" fill="#c997da"/><rect x="110" y="42" width="16" height="16" fill="#b879cf"/><rect x="62" y="58" width="16" height="16" fill="#c997da"/><rect x="78" y="58" width="16" height="16" fill="#9b59b6"/><rect x="94" y="58" width="16" height="16" fill="#eadcf0"/><rect x="110" y="58" width="16" height="16" fill="#b879cf"/><rect x="62" y="74" width="16" height="16" fill="#b879cf"/><rect x="78" y="74" width="16" height="16" fill="#d8b6e6"/><rect x="94" y="74" width="16" height="16" fill="#9b59b6"/><rect x="110" y="74" width="16" height="16" fill="#eadcf0"/></g></g>
+</defs></svg>
+</main>
+<footer><p>Source checkpoints: <code>src-lib/transformer_layer.hpp</code> [01]-[30].</p></footer>
+<script>const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')}),{threshold:.15});document.querySelectorAll('.step').forEach(s=>io.observe(s));</script>
+</body>
+</html>

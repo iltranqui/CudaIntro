@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>DCNv4 Layer Diagram</title>
+<style>:root{--ink:#16202a;--muted:#5d6d7e;--line:#d6dde6;--panel:#f8fafc;--red:#e74c3c;--green:#27ae60;--teal:#3ecfcf;--blue:#5ba4e8;--amber:#f5a623}*{box-sizing:border-box}body{margin:0;font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink)}header,main,footer{max-width:1120px;margin:auto;padding:24px 20px}header{border-bottom:1px solid var(--line)}h1{margin:0 0 8px;font-size:clamp(2rem,4vw,3.25rem);letter-spacing:0}.nav{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.nav a,.back{color:#145da0;font-weight:700;text-decoration:none}.quickref{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}.box,.callout{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:16px}.callout{border-left:5px solid var(--red);background:#fff5f3}.step{display:grid;grid-template-columns:220px 1fr;gap:18px;margin:14px 0;padding:16px;border:1px solid var(--line);border-radius:8px;background:#fff;opacity:0;transform:translateY(30px);transition:.3s ease}.step.visible{opacity:1;transform:none}.num{font-weight:800}.step h3{margin:0 0 6px}.step p,p{margin:0;color:var(--muted)}table{width:100%;border-collapse:collapse;font-size:.92rem}td,th{border-bottom:1px solid var(--line);padding:7px;text-align:left}svg{width:100%;height:auto}.label{font-size:12px;fill:#223;font-weight:700}.arrow{stroke:#555;stroke-width:2;stroke-dasharray:120;stroke-dashoffset:120;transition:stroke-dashoffset .5s ease .3s}.visible .arrow{stroke-dashoffset:0}.op{rx:8;stroke-width:2}.deformation{fill:var(--red);stroke:#a93226}.ffn{fill:var(--green);stroke:#1a7a42}.normalization{fill:var(--amber);stroke:#c07800}.act{fill:#95a5a6;stroke:#707b7c}.front{fill:var(--blue);stroke:#2c6fab}.out{fill:var(--teal);stroke:#1a9e9e}@media(max-width:760px){.step{grid-template-columns:1fr}}.architecture{margin:32px auto;max-width:860px;padding:24px;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:0 4px 14px rgba(22,32,42,.08)}.architecture svg{display:block;width:100%;height:auto}.architecture figcaption{margin-top:12px;text-align:center;font-size:.92rem;color:var(--muted);font-style:italic}</style></head>
+<body><header><a class="back" href="index.html">Layer diagram index</a><h1>DCNv4 Layer</h1><p>Flash deformable aggregation with learned offsets, weights, bilinear sampling, and optional BN/activation.</p><nav class="nav"><a href="transformer_layer.html">Transformer</a><a href="vit_layer.html">ViT</a><a href="deconvolutional_layer.html">Deconvolutional</a><a href="clifford_layer.html">Clifford</a><a href="graph_conv_layer.html">Graph Conv</a></nav></header>
+<main>
+<section class="quickref"><div class="box"><h2>CFG Quickref</h2><table><tr><th>Param</th><th>Meaning</th></tr><tr><td><code>filters</code></td><td>Must equal C</td></tr><tr><td><code>size</code></td><td>Kernel K</td></tr><tr><td><code>groups</code></td><td>Deformable groups</td></tr><tr><td><code>offset_scale</code></td><td>Offset multiplier</td></tr><tr><td><code>softmax</code></td><td>Normalize sample weights</td></tr></table></div><div class="callout"><h2>C=N Constraint</h2><p>DCNv4 is a spatial aggregation layer in this implementation: output channels are forced to match input channels.</p></div></section>
+<figure class="architecture">
+<svg viewBox="0 0 840 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Standard convolution vs DCNv4 deformable sampling">
+<defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#16202a"/></marker><marker id="dlt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#a93226"/></marker></defs>
+<style>
+  .ttl{font:700 17px system-ui,sans-serif;fill:#16202a;text-anchor:middle}
+  .sub2{font:500 12px system-ui,sans-serif;fill:#5d6d7e;text-anchor:middle}
+  .lab{font:600 12px system-ui,sans-serif;fill:#16202a;text-anchor:middle}
+  .key{font:700 13px system-ui,sans-serif;text-anchor:middle}
+  .eq{font:600 13px ui-monospace,Menlo,Consolas,monospace;fill:#145da0;text-anchor:middle}
+</style>
+<line x1="420" y1="10" x2="420" y2="530" stroke="#d6dde6" stroke-width="2" stroke-dasharray="6 4"/>
+
+<!-- LEFT: Standard Conv -->
+<text class="ttl" x="210" y="34">Standard K×K Convolution</text>
+<text class="sub2" x="210" y="52">fixed integer grid · fixed kernel weights</text>
+
+<!-- 5x5 background grid for left, cell 32, total 160x160, x=130-290, y=80-240 -->
+<g fill="#f8fafc" stroke="#d6dde6">
+  <rect x="130" y="80"  width="32" height="32"/><rect x="162" y="80"  width="32" height="32"/><rect x="194" y="80"  width="32" height="32"/><rect x="226" y="80"  width="32" height="32"/><rect x="258" y="80"  width="32" height="32"/>
+  <rect x="130" y="112" width="32" height="32"/><rect x="162" y="112" width="32" height="32"/><rect x="194" y="112" width="32" height="32"/><rect x="226" y="112" width="32" height="32"/><rect x="258" y="112" width="32" height="32"/>
+  <rect x="130" y="144" width="32" height="32"/><rect x="162" y="144" width="32" height="32"/><rect x="194" y="144" width="32" height="32"/><rect x="226" y="144" width="32" height="32"/><rect x="258" y="144" width="32" height="32"/>
+  <rect x="130" y="176" width="32" height="32"/><rect x="162" y="176" width="32" height="32"/><rect x="194" y="176" width="32" height="32"/><rect x="226" y="176" width="32" height="32"/><rect x="258" y="176" width="32" height="32"/>
+  <rect x="130" y="208" width="32" height="32"/><rect x="162" y="208" width="32" height="32"/><rect x="194" y="208" width="32" height="32"/><rect x="226" y="208" width="32" height="32"/><rect x="258" y="208" width="32" height="32"/>
+</g>
+<!-- 3x3 sample grid centered (cells 1-3, x=162-258, y=112-208) -->
+<rect x="162" y="112" width="96" height="96" fill="none" stroke="#2c6fab" stroke-width="2"/>
+<!-- 9 sample dots at integer positions (cell centers x=178,210,242 y=128,160,192) -->
+<g fill="#5ba4e8" stroke="#2c6fab" stroke-width="1.5">
+  <circle cx="178" cy="128" r="6"/><circle cx="210" cy="128" r="6"/><circle cx="242" cy="128" r="6"/>
+  <circle cx="178" cy="160" r="6"/><circle cx="242" cy="160" r="6"/>
+  <circle cx="178" cy="192" r="6"/><circle cx="210" cy="192" r="6"/><circle cx="242" cy="192" r="6"/>
+</g>
+<!-- center output site -->
+<rect x="200" y="150" width="20" height="20" fill="#3ecfcf" stroke="#1a9e9e" stroke-width="2"/>
+<text class="lab" x="210" y="164" fill="#fff">y</text>
+<!-- weight labels -->
+<g class="lab" font-size="10">
+  <text x="178" y="120">w1</text><text x="210" y="120">w2</text><text x="242" y="120">w3</text>
+  <text x="178" y="120" opacity="0"></text>
+  <text x="170" y="164">w4</text><text x="250" y="164">w6</text>
+  <text x="178" y="208">w7</text><text x="210" y="208">w8</text><text x="242" y="208">w9</text>
+</g>
+
+<text class="lab" x="210" y="270">9 samples on integer grid · weights w_k = parameters</text>
+<text class="eq" x="210" y="300">y = Σ_k  w_k · F(p_0 + p_k)</text>
+<text class="sub2" x="210" y="318">p_k ∈ {(-1,-1),…,(1,1)}  fixed integer offsets</text>
+
+<rect x="40" y="346" width="340" height="180" rx="8" fill="#eef5ff" stroke="#2c6fab"/>
+<text class="key" x="210" y="370" fill="#2c6fab">Properties</text>
+<text class="sub2" x="210" y="392">+ same kernel applied at every site</text>
+<text class="sub2" x="210" y="412">+ translation-equivariant</text>
+<text class="sub2" x="210" y="434">− samples lock to integer pixel grid</text>
+<text class="sub2" x="210" y="454">− kernel cannot adapt shape to content</text>
+<text class="sub2" x="210" y="478">  (a vertical edge filter stays vertical</text>
+<text class="sub2" x="210" y="494">  whether the edge is straight or curved)</text>
+<text class="sub2" x="210" y="518">cost: K·K MACs / channel / site</text>
+
+<!-- RIGHT: DCNv4 -->
+<text class="ttl" x="630" y="34">DCNv4 Deformable Sampling</text>
+<text class="sub2" x="630" y="52">learned offsets Δp · learned modulation m</text>
+
+<!-- 5x5 background grid -->
+<g fill="#f8fafc" stroke="#d6dde6">
+  <rect x="550" y="80"  width="32" height="32"/><rect x="582" y="80"  width="32" height="32"/><rect x="614" y="80"  width="32" height="32"/><rect x="646" y="80"  width="32" height="32"/><rect x="678" y="80"  width="32" height="32"/>
+  <rect x="550" y="112" width="32" height="32"/><rect x="582" y="112" width="32" height="32"/><rect x="614" y="112" width="32" height="32"/><rect x="646" y="112" width="32" height="32"/><rect x="678" y="112" width="32" height="32"/>
+  <rect x="550" y="144" width="32" height="32"/><rect x="582" y="144" width="32" height="32"/><rect x="614" y="144" width="32" height="32"/><rect x="646" y="144" width="32" height="32"/><rect x="678" y="144" width="32" height="32"/>
+  <rect x="550" y="176" width="32" height="32"/><rect x="582" y="176" width="32" height="32"/><rect x="614" y="176" width="32" height="32"/><rect x="646" y="176" width="32" height="32"/><rect x="678" y="176" width="32" height="32"/>
+  <rect x="550" y="208" width="32" height="32"/><rect x="582" y="208" width="32" height="32"/><rect x="614" y="208" width="32" height="32"/><rect x="646" y="208" width="32" height="32"/><rect x="678" y="208" width="32" height="32"/>
+</g>
+<!-- ghost integer grid (faint blue circles where standard conv would sample) -->
+<g fill="none" stroke="#5ba4e8" stroke-width="1" stroke-dasharray="2 2">
+  <circle cx="598" cy="128" r="5"/><circle cx="630" cy="128" r="5"/><circle cx="662" cy="128" r="5"/>
+  <circle cx="598" cy="160" r="5"/><circle cx="662" cy="160" r="5"/>
+  <circle cx="598" cy="192" r="5"/><circle cx="630" cy="192" r="5"/><circle cx="662" cy="192" r="5"/>
+</g>
+<!-- displacement arrows from integer to deformed positions -->
+<g stroke="#a93226" stroke-width="1.5" fill="none">
+  <line x1="598" y1="128" x2="586" y2="118" marker-end="url(#dlt)"/>
+  <line x1="630" y1="128" x2="640" y2="106" marker-end="url(#dlt)"/>
+  <line x1="662" y1="128" x2="672" y2="142" marker-end="url(#dlt)"/>
+  <line x1="598" y1="160" x2="572" y2="172" marker-end="url(#dlt)"/>
+  <line x1="662" y1="160" x2="690" y2="156" marker-end="url(#dlt)"/>
+  <line x1="598" y1="192" x2="582" y2="216" marker-end="url(#dlt)"/>
+  <line x1="630" y1="192" x2="624" y2="222" marker-end="url(#dlt)"/>
+  <line x1="662" y1="192" x2="678" y2="200" marker-end="url(#dlt)"/>
+</g>
+<!-- deformed sample dots (red, with varying intensity for modulation m_k) -->
+<g stroke="#a93226" stroke-width="1.5">
+  <circle cx="586" cy="118" r="6" fill="#e74c3c" fill-opacity="0.95"/>
+  <circle cx="640" cy="106" r="6" fill="#e74c3c" fill-opacity="0.45"/>
+  <circle cx="672" cy="142" r="6" fill="#e74c3c" fill-opacity="0.85"/>
+  <circle cx="572" cy="172" r="6" fill="#e74c3c" fill-opacity="0.30"/>
+  <circle cx="690" cy="156" r="6" fill="#e74c3c" fill-opacity="0.95"/>
+  <circle cx="582" cy="216" r="6" fill="#e74c3c" fill-opacity="0.55"/>
+  <circle cx="624" cy="222" r="6" fill="#e74c3c" fill-opacity="0.75"/>
+  <circle cx="678" cy="200" r="6" fill="#e74c3c" fill-opacity="0.40"/>
+</g>
+<!-- center output site -->
+<rect x="620" y="150" width="20" height="20" fill="#3ecfcf" stroke="#1a9e9e" stroke-width="2"/>
+<text class="lab" x="630" y="164" fill="#fff">y</text>
+
+<text class="lab" x="630" y="270">samples at p_k + Δp_k (fractional · bilinear interp.)</text>
+<text class="eq" x="630" y="300">y = Σ_k  m_k · F(p_0 + p_k + Δp_k)</text>
+<text class="sub2" x="630" y="318">(Δp_k, m_k) predicted from input by 1×1 offset subnet</text>
+
+<rect x="460" y="346" width="340" height="180" rx="8" fill="#fff5f3" stroke="#a93226"/>
+<text class="key" x="630" y="370" fill="#a93226">Properties</text>
+<text class="sub2" x="630" y="392">+ samples follow object shape, not pixel grid</text>
+<text class="sub2" x="630" y="412">+ modulation m_k can dampen distractors</text>
+<text class="sub2" x="630" y="434">+ same gather-+-weighted-sum as conv;</text>
+<text class="sub2" x="630" y="454">  bilinear interp. keeps it differentiable</text>
+<text class="sub2" x="630" y="478">− extra cost: 1×1 subnet predicts</text>
+<text class="sub2" x="630" y="494">  G·K·3 channels per output site</text>
+<text class="sub2" x="630" y="518">cost: K·K MACs + offset subnet + 4-tap interp.</text>
+</svg>
+<figcaption><strong>Conv vs DCNv4.</strong> Both compute a weighted sum over K·K samples around each output site. Conv samples integer pixels with shared kernel weights; DCNv4 predicts a per-site (Δy, Δx, modulation) triplet for every sample, so the receptive field bends to the input's geometry.</figcaption>
+</figure>
+
+<figure class="architecture">
+<svg viewBox="0 0 840 1180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="DCNv4 layer architecture">
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#16202a"/></marker></defs>
+<style>
+  .blk{stroke-width:2}
+  .lbl{font:600 15px system-ui,sans-serif;fill:#16202a;text-anchor:middle}
+  .sub{font:500 12px system-ui,sans-serif;fill:#5d6d7e;text-anchor:middle}
+  .tag{font:600 11px system-ui,sans-serif;fill:#5d6d7e;text-anchor:middle}
+  .dim{font:600 12px ui-monospace,Menlo,Consolas,monospace;fill:#145da0;text-anchor:start}
+  .dimC{font:600 12px ui-monospace,Menlo,Consolas,monospace;fill:#145da0;text-anchor:middle}
+  .wire{fill:none;stroke:#16202a;stroke-width:2}
+  .ofw{fill:none;stroke:#a93226;stroke-width:2;stroke-dasharray:6 4}
+</style>
+
+<!-- Input -->
+<rect class="blk" x="320" y="40" width="200" height="60" rx="10" fill="#ff8c55" stroke="#c0622a"/>
+<text class="lbl" x="420" y="68">Input</text>
+<text class="sub" x="420" y="86">spatial feature map</text>
+<circle cx="420" cy="140" r="4" fill="#16202a"/>
+<path class="wire" d="M420 100 V140"/>
+<text class="dim" x="432" y="128">[B, C, H, W]</text>
+
+<!-- Fork: feature path down, offset path right -->
+<path class="wire" d="M420 140 V200" marker-end="url(#arr)"/>
+<path class="ofw" d="M420 140 H660 V200" marker-end="url(#arr)"/>
+
+<!-- Feature source (left/main) -->
+<rect class="blk" x="300" y="200" width="240" height="56" rx="10" fill="#d6e6ff" stroke="#2c6fab"/>
+<text class="lbl" x="420" y="226">Feature source</text>
+<text class="sub" x="420" y="244">[B, C, H, W]   sampled at fractional p</text>
+
+<!-- Offset subnet (right) -->
+<rect class="blk" x="580" y="200" width="220" height="56" rx="10" fill="#fbe4e0" stroke="#a93226"/>
+<text class="lbl" x="690" y="226">Offset subnet (1×1)</text>
+<text class="sub" x="690" y="244">predict (Δy, Δx, w) per sample</text>
+<path class="ofw" d="M690 256 V310" marker-end="url(#arr)"/>
+<text class="dim" x="702" y="284">[B, G·K_eff·3, H', W']</text>
+
+<!-- Unpack -->
+<rect class="blk" x="580" y="310" width="220" height="64" rx="10" fill="#fff" stroke="#a93226"/>
+<text class="lbl" x="690" y="334">Unpack</text>
+<text class="sub" x="690" y="354">Δy ·  Δx ·  modulation w</text>
+<text class="sub" x="690" y="370">(softmax over K·K if cfg)</text>
+<path class="ofw" d="M690 374 V440 H540" marker-end="url(#arr)"/>
+
+<!-- Feature wire continues down to deformable sampler -->
+<path class="wire" d="M420 256 V440" marker-end="url(#arr)"/>
+
+<!-- Deformable sampler (combined: build grid + bilinear gather) -->
+<rect class="blk" x="240" y="440" width="360" height="100" rx="10" fill="#fbe4e0" stroke="#a93226"/>
+<text class="lbl" x="420" y="468">Deformable bilinear sampler</text>
+<text class="sub" x="420" y="488">build grid:  p_k + Δp_k    (regular K×K + offsets)</text>
+<text class="sub" x="420" y="506">bilinear gather:  4-tap interp at each fractional p</text>
+<text class="dimC" x="420" y="528">→ samples [B, G, K_eff, C/G, H', W']</text>
+<path class="wire" d="M420 540 V604" marker-end="url(#arr)"/>
+<text class="dim" x="432" y="580">sampled features × K_eff per site</text>
+
+<!-- Weighted aggregation -->
+<rect class="blk" x="280" y="604" width="280" height="80" rx="10" fill="#e9d6f0" stroke="#6c3483"/>
+<text class="lbl" x="420" y="632">Weighted aggregation</text>
+<text class="sub" x="420" y="652">y_i = Σ_k  w_k · F(p_0 + p_k + Δp_k)</text>
+<text class="sub" x="420" y="670">summed per group, concatenated back to C</text>
+<path class="wire" d="M420 684 V744" marker-end="url(#arr)"/>
+<text class="dim" x="432" y="720">[B, C, H', W']</text>
+
+<!-- BatchNorm -->
+<rect class="blk" x="320" y="744" width="200" height="56" rx="10" fill="#ffe6b3" stroke="#c07800"/>
+<text class="lbl" x="420" y="770">BatchNorm</text>
+<text class="sub" x="420" y="788">batch_normalize (optional)</text>
+<path class="wire" d="M420 800 V856" marker-end="url(#arr)"/>
+
+<!-- Activation -->
+<rect class="blk" x="320" y="856" width="200" height="56" rx="10" fill="#f0f0f2" stroke="#707b7c"/>
+<text class="lbl" x="420" y="888">Activation</text>
+<path class="wire" d="M420 912 V970" marker-end="url(#arr)"/>
+
+<!-- Output -->
+<rect class="blk" x="320" y="970" width="200" height="60" rx="10" fill="#3ecfcf" stroke="#1a9e9e"/>
+<text class="lbl" x="420" y="998">Output</text>
+<text class="sub" x="420" y="1016">[B, C, H', W']  (C = filters)</text>
+
+<!-- Side tag -->
+<text class="tag" x="734" y="540" transform="rotate(90 734 540)">offsets + modulation flow</text>
+</svg>
+<figcaption>DCNv4 layer. Two parallel branches from the input: the feature path supplies what to sample, the offset subnet decides where to sample and how to weight each sample. They converge at the deformable bilinear sampler.</figcaption>
+</figure>
+<section class="box"><h2>d_stride Note</h2><p>The public config describes sparse offset fields, but the current GPU note says spatial <code>d_stride</code> downsampling is still a TODO; kernel <code>d_stride</code> is channel ILP.</p></section>
+</main><footer><p>Sources: <code>src-lib/dcnv4_layer.hpp</code> and <code>docs/dcnv4_layer.md</code>.</p></footer><script>const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')}),{threshold:.15});document.querySelectorAll('.step').forEach(s=>io.observe(s));</script></body></html>

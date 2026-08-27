@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Deconvolutional Layer Diagram</title>
+<style>:root{--ink:#16202a;--muted:#5d6d7e;--line:#d6dde6;--panel:#f8fafc;--blue:#5ba4e8;--teal:#3ecfcf;--green:#27ae60;--amber:#f5a623}*{box-sizing:border-box}body{margin:0;font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink)}header,main,footer{max-width:1120px;margin:auto;padding:24px 20px}header{border-bottom:1px solid var(--line)}h1{margin:0 0 8px;font-size:clamp(2rem,4vw,3.25rem);letter-spacing:0}.nav{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.nav a,.back{color:#145da0;font-weight:700;text-decoration:none}.quickref{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}.box,.callout{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:16px}.callout{border-left:5px solid #e74c3c;background:#fff5f3}.step{display:grid;grid-template-columns:220px 1fr;gap:18px;margin:14px 0;padding:16px;border:1px solid var(--line);border-radius:8px;background:#fff;opacity:0;transform:translateY(30px);transition:.3s ease}.step.visible{opacity:1;transform:none}.num{font-weight:800}.step h3{margin:0 0 6px}.step p,p{margin:0;color:var(--muted)}table{width:100%;border-collapse:collapse;font-size:.92rem}td,th{border-bottom:1px solid var(--line);padding:7px;text-align:left}svg{width:100%;height:auto}.label{font-size:12px;fill:#223;font-weight:700}.arrow{stroke:#555;stroke-width:2;stroke-dasharray:120;stroke-dashoffset:120;transition:stroke-dashoffset .5s ease .3s}.visible .arrow{stroke-dashoffset:0}.op{rx:8;stroke-width:2}.ffn{fill:var(--green);stroke:#1a7a42}.bias{fill:var(--amber);stroke:#c07800}.front{fill:var(--blue);stroke:#2c6fab}.out{fill:var(--teal);stroke:#1a9e9e}@media(max-width:760px){.step{grid-template-columns:1fr}}.architecture{margin:32px auto;max-width:860px;padding:24px;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:0 4px 14px rgba(22,32,42,.08)}.architecture svg{display:block;width:100%;height:auto}.architecture figcaption{margin-top:12px;text-align:center;font-size:.92rem;color:var(--muted);font-style:italic}</style></head>
+<body><header><a class="back" href="index.html">Layer diagram index</a><h1>Deconvolutional Layer</h1><p>Transposed convolution for spatial upsampling through spread, GEMM, col2im, bias, and activation.</p><nav class="nav"><a href="transformer_layer.html">Transformer</a><a href="vit_layer.html">ViT</a><a href="dcnv4_layer.html">DCNv4</a><a href="clifford_layer.html">Clifford</a><a href="graph_conv_layer.html">Graph Conv</a></nav></header>
+<main>
+<section class="quickref"><div class="box"><h2>CFG Quickref</h2><table><tr><th>Param</th><th>Meaning</th></tr><tr><td><code>filters</code></td><td>Output channels N</td></tr><tr><td><code>size</code></td><td>Kernel side</td></tr><tr><td><code>stride</code></td><td>Upsampling factor</td></tr><tr><td><code>activation</code></td><td>Post-bias activation</td></tr></table></div><div class="callout"><h2>BN Not Supported</h2><p><code>batch_normalize</code> is currently missing for this layer; use a separate batchnorm layer if needed.</p></div></section>
+<figure class="architecture">
+<svg viewBox="0 0 840 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Convolution vs Deconvolution comparison">
+<defs>
+  <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#16202a"/></marker>
+  <marker id="gth" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#2c6fab"/></marker>
+  <marker id="sct" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1a7a42"/></marker>
+</defs>
+<style>
+  .ttl{font:700 17px system-ui,sans-serif;fill:#16202a;text-anchor:middle}
+  .sub2{font:500 12px system-ui,sans-serif;fill:#5d6d7e;text-anchor:middle}
+  .lab{font:600 12px system-ui,sans-serif;fill:#16202a;text-anchor:middle}
+  .key{font:700 13px system-ui,sans-serif;text-anchor:middle}
+  .eq{font:600 13px ui-monospace,Menlo,Consolas,monospace;fill:#145da0;text-anchor:middle}
+</style>
+<line x1="420" y1="10" x2="420" y2="550" stroke="#d6dde6" stroke-width="2" stroke-dasharray="6 4"/>
+
+<!-- LEFT: Convolution = gather (many → one) -->
+<text class="ttl" x="210" y="34">Convolution  (downsample / preserve)</text>
+<text class="sub2" x="210" y="52">many input cells  →  one output cell  ·  gather + dot</text>
+
+<!-- Input grid 4x4 left, cell 30, total 120x120, x=80-200, y=80-200 -->
+<text class="lab" x="140" y="76">input</text>
+<g fill="#d6e6ff" stroke="#2c6fab">
+  <rect x="80"  y="80"  width="30" height="30"/><rect x="110" y="80"  width="30" height="30"/><rect x="140" y="80"  width="30" height="30"/><rect x="170" y="80"  width="30" height="30"/>
+  <rect x="80"  y="110" width="30" height="30"/><rect x="110" y="110" width="30" height="30"/><rect x="140" y="110" width="30" height="30"/><rect x="170" y="110" width="30" height="30"/>
+  <rect x="80"  y="140" width="30" height="30"/><rect x="110" y="140" width="30" height="30"/><rect x="140" y="140" width="30" height="30"/><rect x="170" y="140" width="30" height="30"/>
+  <rect x="80"  y="170" width="30" height="30"/><rect x="110" y="170" width="30" height="30"/><rect x="140" y="170" width="30" height="30"/><rect x="170" y="170" width="30" height="30"/>
+</g>
+<!-- 3x3 window highlighted at top-left -->
+<rect x="80" y="80" width="90" height="90" fill="none" stroke="#2c6fab" stroke-width="3"/>
+
+<!-- Output grid 2x2 right -->
+<text class="lab" x="320" y="76">output</text>
+<g fill="#fff" stroke="#1a9e9e">
+  <rect x="290" y="100" width="30" height="30"/><rect x="320" y="100" width="30" height="30"/>
+  <rect x="290" y="130" width="30" height="30"/><rect x="320" y="130" width="30" height="30"/>
+</g>
+<!-- single output cell highlighted -->
+<rect x="290" y="100" width="30" height="30" fill="#3ecfcf" stroke="#1a9e9e" stroke-width="3"/>
+<text class="lab" x="305" y="120" fill="#fff">y</text>
+
+<!-- gather arrows: 9 input cells → 1 output cell -->
+<g stroke="#2c6fab" stroke-width="1" fill="none" stroke-opacity="0.6">
+  <path d="M95 95   Q200 80 295 110" marker-end="url(#gth)"/>
+  <path d="M125 95  Q210 88 295 110" marker-end="url(#gth)"/>
+  <path d="M155 95  Q220 96 295 110"  marker-end="url(#gth)"/>
+  <path d="M95 125  Q200 108 295 113" marker-end="url(#gth)"/>
+  <path d="M125 125 Q210 116 295 115" marker-end="url(#gth)"/>
+  <path d="M155 125 Q220 124 295 117" marker-end="url(#gth)"/>
+  <path d="M95 155  Q200 140 295 120" marker-end="url(#gth)"/>
+  <path d="M125 155 Q210 148 295 122" marker-end="url(#gth)"/>
+  <path d="M155 155 Q220 156 295 124" marker-end="url(#gth)"/>
+</g>
+
+<text class="lab" x="210" y="234">9 inputs are weighted &amp; summed → 1 output</text>
+<text class="eq" x="210" y="266">y[i,j] = Σ_kk  w[k,k] · x[i+k, j+k]</text>
+<text class="sub2" x="210" y="286">stride=1: out_H = H − K + 1   (smaller)</text>
+
+<rect x="40" y="316" width="340" height="220" rx="8" fill="#eef5ff" stroke="#2c6fab"/>
+<text class="key" x="210" y="340" fill="#2c6fab">Conv = gather</text>
+<text class="sub2" x="210" y="362">at every output site, slide window over input,</text>
+<text class="sub2" x="210" y="378">multiply by kernel, sum into one scalar.</text>
+<text class="sub2" x="210" y="402">spatial size:  out = (H − K + 2P) / S + 1</text>
+<text class="sub2" x="210" y="422">channels:  C → N  (any)</text>
+<text class="sub2" x="210" y="446">implementation:</text>
+<text class="sub2" x="210" y="464">  im2col  →  GEMM  (matmul)</text>
+<text class="sub2" x="210" y="490">use case:</text>
+<text class="sub2" x="210" y="508">  feature extraction, downsampling stages,</text>
+<text class="sub2" x="210" y="524">  encoder backbones</text>
+
+<!-- RIGHT: Deconvolution = scatter (one → many) -->
+<text class="ttl" x="630" y="34">Deconvolution  (upsample)</text>
+<text class="sub2" x="630" y="52">one input cell  →  many output cells  ·  scatter + accumulate</text>
+
+<!-- Input grid 2x2 left -->
+<text class="lab" x="525" y="76">input</text>
+<g fill="#d6e6ff" stroke="#2c6fab">
+  <rect x="495" y="100" width="30" height="30"/><rect x="525" y="100" width="30" height="30"/>
+  <rect x="495" y="130" width="30" height="30"/><rect x="525" y="130" width="30" height="30"/>
+</g>
+<!-- single input cell highlighted -->
+<rect x="495" y="100" width="30" height="30" fill="#5ba4e8" stroke="#2c6fab" stroke-width="3"/>
+<text class="lab" x="510" y="120" fill="#fff">x</text>
+
+<!-- Output grid 5x5 right (stride 2, K=3 → 5 = 2*(2-1)+3) cell 24, x=620-740, y=80-200 -->
+<text class="lab" x="680" y="76">output (upsampled)</text>
+<g fill="#fff" stroke="#1a9e9e">
+  <rect x="620" y="80"  width="24" height="24"/><rect x="644" y="80"  width="24" height="24"/><rect x="668" y="80"  width="24" height="24"/><rect x="692" y="80"  width="24" height="24"/><rect x="716" y="80"  width="24" height="24"/>
+  <rect x="620" y="104" width="24" height="24"/><rect x="644" y="104" width="24" height="24"/><rect x="668" y="104" width="24" height="24"/><rect x="692" y="104" width="24" height="24"/><rect x="716" y="104" width="24" height="24"/>
+  <rect x="620" y="128" width="24" height="24"/><rect x="644" y="128" width="24" height="24"/><rect x="668" y="128" width="24" height="24"/><rect x="692" y="128" width="24" height="24"/><rect x="716" y="128" width="24" height="24"/>
+  <rect x="620" y="152" width="24" height="24"/><rect x="644" y="152" width="24" height="24"/><rect x="668" y="152" width="24" height="24"/><rect x="692" y="152" width="24" height="24"/><rect x="716" y="152" width="24" height="24"/>
+  <rect x="620" y="176" width="24" height="24"/><rect x="644" y="176" width="24" height="24"/><rect x="668" y="176" width="24" height="24"/><rect x="692" y="176" width="24" height="24"/><rect x="716" y="176" width="24" height="24"/>
+</g>
+<!-- highlight 3x3 region where x scatters: cells (0,0)-(2,2) at x=620-692, y=80-152 -->
+<g fill="#d6f0e0" fill-opacity="0.7" stroke="#1a7a42" stroke-width="2">
+  <rect x="620" y="80"  width="24" height="24"/><rect x="644" y="80"  width="24" height="24"/><rect x="668" y="80"  width="24" height="24"/>
+  <rect x="620" y="104" width="24" height="24"/><rect x="644" y="104" width="24" height="24"/><rect x="668" y="104" width="24" height="24"/>
+  <rect x="620" y="128" width="24" height="24"/><rect x="644" y="128" width="24" height="24"/><rect x="668" y="128" width="24" height="24"/>
+</g>
+
+<!-- scatter arrows: 1 input cell → 9 output cells -->
+<g stroke="#1a7a42" stroke-width="1" fill="none" stroke-opacity="0.65">
+  <path d="M515 110 Q570 80 632 90"  marker-end="url(#sct)"/>
+  <path d="M515 110 Q570 88 656 90"  marker-end="url(#sct)"/>
+  <path d="M515 110 Q580 96 680 90"  marker-end="url(#sct)"/>
+  <path d="M515 115 Q570 104 632 114" marker-end="url(#sct)"/>
+  <path d="M515 115 Q570 112 656 114" marker-end="url(#sct)"/>
+  <path d="M515 115 Q580 120 680 114" marker-end="url(#sct)"/>
+  <path d="M515 120 Q570 128 632 138" marker-end="url(#sct)"/>
+  <path d="M515 120 Q570 136 656 138" marker-end="url(#sct)"/>
+  <path d="M515 120 Q580 144 680 138" marker-end="url(#sct)"/>
+</g>
+
+<!-- overlap note: highlight overlap region (cells where multiple input scatters meet) -->
+<text class="sub2" x="700" y="218" fill="#a93226">overlapping scatters from neighbors accumulate</text>
+
+<text class="lab" x="630" y="252">1 input is multiplied by K·K weights → 9 outputs</text>
+<text class="eq" x="630" y="282">out[i', j'] += Σ_{i,j}  w · x[i, j]   (overlap sums)</text>
+<text class="sub2" x="630" y="302">stride=2: out_H = stride·(H − 1) + K   (larger)</text>
+
+<rect x="460" y="316" width="340" height="220" rx="8" fill="#eef5ff" stroke="#1a7a42"/>
+<text class="key" x="630" y="340" fill="#1a7a42">Deconv = scatter (transposed conv)</text>
+<text class="sub2" x="630" y="362">at every input site, broadcast value through</text>
+<text class="sub2" x="630" y="378">kernel, accumulate into output (overlaps add).</text>
+<text class="sub2" x="630" y="402">spatial size:  out = stride·(H − 1) + K</text>
+<text class="sub2" x="630" y="422">channels:  C → N  (any)</text>
+<text class="sub2" x="630" y="446">implementation:</text>
+<text class="sub2" x="630" y="464">  GEMM  →  col2im  (transposed pair)</text>
+<text class="sub2" x="630" y="490">use case:</text>
+<text class="sub2" x="630" y="508">  upsampling, decoder heads, segmentation,</text>
+<text class="sub2" x="630" y="524">  generators · backward pass of conv</text>
+</svg>
+<figcaption><strong>Conv vs Deconv (transposed conv).</strong> They are mathematical duals: conv aggregates a window into a scalar (gather); deconv broadcasts a scalar into a window (scatter), with overlaps summing. Implementation flips the order:  conv = im2col→GEMM,  deconv = GEMM→col2im.</figcaption>
+</figure>
+
+<figure class="architecture">
+<svg viewBox="0 0 820 1240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Deconvolutional layer architecture">
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#16202a"/></marker></defs>
+<style>
+  .blk{stroke-width:2}
+  .lbl{font:600 15px system-ui,sans-serif;fill:#16202a;text-anchor:middle}
+  .sub{font:500 12px system-ui,sans-serif;fill:#5d6d7e;text-anchor:middle}
+  .tag{font:600 11px system-ui,sans-serif;fill:#5d6d7e;text-anchor:middle}
+  .dim{font:600 12px ui-monospace,Menlo,Consolas,monospace;fill:#145da0;text-anchor:start}
+  .dimC{font:600 12px ui-monospace,Menlo,Consolas,monospace;fill:#145da0;text-anchor:middle}
+  .wire{fill:none;stroke:#16202a;stroke-width:2}
+</style>
+
+<!-- Input -->
+<rect class="blk" x="300" y="40" width="200" height="60" rx="10" fill="#ff8c55" stroke="#c0622a"/>
+<text class="lbl" x="400" y="68">Input</text>
+<text class="sub" x="400" y="86">low-resolution feature map</text>
+<path class="wire" d="M400 100 V180" marker-end="url(#arr)"/>
+<text class="dim" x="412" y="148">[B, C, H, W]</text>
+
+<!-- Output size formula -->
+<rect class="blk" x="240" y="180" width="320" height="76" rx="10" fill="#fff" stroke="#5d6d7e"/>
+<text class="lbl" x="400" y="208">Compute output size</text>
+<text class="sub" x="400" y="228">out_H = stride · (H − 1) + size</text>
+<text class="sub" x="400" y="246">out_W = stride · (W − 1) + size</text>
+<path class="wire" d="M400 256 V316" marker-end="url(#arr)"/>
+<text class="dim" x="412" y="292">[B, C, H, W]   target: H', W'</text>
+
+<!-- GEMM -->
+<rect class="blk" x="280" y="316" width="240" height="76" rx="10" fill="#d6f0e0" stroke="#1a7a42"/>
+<text class="lbl" x="400" y="344">GEMM</text>
+<text class="sub" x="400" y="364">W^T · x_flat → column buffer</text>
+<text class="sub" x="400" y="382">(weights laid out C → N · K · K)</text>
+<path class="wire" d="M400 392 V452" marker-end="url(#arr)"/>
+<text class="dim" x="412" y="428">column buffer  [B, N · K · K, H · W]</text>
+
+<!-- col2im (scatter + spread by stride combined) -->
+<rect class="blk" x="240" y="452" width="320" height="100" rx="10" fill="#d6f0e0" stroke="#1a7a42"/>
+<text class="lbl" x="400" y="480">col2im  (scatter + accumulate)</text>
+<text class="sub" x="400" y="500">place each column at strided position,</text>
+<text class="sub" x="400" y="518">add into overlapping output cells</text>
+<text class="dimC" x="400" y="540">→ [B, N, out_H, out_W]</text>
+<path class="wire" d="M400 552 V612" marker-end="url(#arr)"/>
+<text class="dim" x="412" y="588">[B, N, out_H, out_W]</text>
+
+<!-- Bias -->
+<rect class="blk" x="320" y="612" width="200" height="56" rx="10" fill="#ffe6b3" stroke="#c07800"/>
+<text class="lbl" x="420" y="638">+ bias</text>
+<text class="sub" x="420" y="656">per-channel bias (N values)</text>
+<path class="wire" d="M420 668 V724" marker-end="url(#arr)"/>
+
+<!-- Activation -->
+<rect class="blk" x="320" y="724" width="200" height="56" rx="10" fill="#f0f0f2" stroke="#707b7c"/>
+<text class="lbl" x="420" y="756">Activation</text>
+<text class="sub" x="420" y="772">in-place</text>
+<path class="wire" d="M420 780 V840" marker-end="url(#arr)"/>
+
+<!-- Output -->
+<rect class="blk" x="320" y="840" width="200" height="60" rx="10" fill="#3ecfcf" stroke="#1a9e9e"/>
+<text class="lbl" x="420" y="868">Output</text>
+<text class="sub" x="420" y="886">[B, N, out_H, out_W]   (upsampled)</text>
+
+<!-- Equivalent view annotation -->
+<rect x="60" y="940" width="700" height="240" rx="10" fill="#f8fafc" stroke="#d6dde6"/>
+<text class="lbl" x="410" y="966">Equivalent &quot;spread + conv&quot; view</text>
+<text class="sub" x="410" y="988">deconv = (insert stride−1 zeros between samples) → standard conv with kernel W</text>
+
+<!-- mini illustration: input 2x2 → spread 3x3 with zeros → 5x5 with kernel applied -->
+<g transform="translate(110 1010)">
+  <text class="lab" x="40" y="14" font-size="11" fill="#5d6d7e">input 2×2</text>
+  <g fill="#d6e6ff" stroke="#2c6fab"><rect x="0" y="22" width="22" height="22"/><rect x="22" y="22" width="22" height="22"/><rect x="0" y="44" width="22" height="22"/><rect x="22" y="44" width="22" height="22"/></g>
+</g>
+
+<text x="220" y="1062" font-size="22" fill="#5d6d7e" text-anchor="middle">→</text>
+<text class="sub" x="220" y="1082">insert zeros</text>
+
+<g transform="translate(260 1010)">
+  <text class="lab" x="55" y="14" font-size="11" fill="#5d6d7e">spread (stride 2)</text>
+  <g><rect x="0"   y="22" width="22" height="22" fill="#d6e6ff" stroke="#2c6fab"/><rect x="22"  y="22" width="22" height="22" fill="#fff" stroke="#d6dde6"/><rect x="44"  y="22" width="22" height="22" fill="#d6e6ff" stroke="#2c6fab"/><rect x="66"  y="22" width="22" height="22" fill="#fff" stroke="#d6dde6"/><rect x="88"  y="22" width="22" height="22" fill="#fff" stroke="#d6dde6"/></g>
+  <g><rect x="0"   y="44" width="22" height="22" fill="#fff" stroke="#d6dde6"/><rect x="22"  y="44" width="22" height="22" fill="#fff" stroke="#d6dde6"/><rect x="44"  y="44" width="22" height="22" fill="#fff" stroke="#d6dde6"/><rect x="66"  y="44" width="22" height="22" fill="#fff" stroke="#d6dde6"/><rect x="88"  y="44" width="22" height="22" fill="#fff" stroke="#d6dde6"/></g>
+  <g><rect x="0"   y="66" width="22" height="22" fill="#d6e6ff" stroke="#2c6fab"/><rect x="22"  y="66" width="22" height="22" fill="#fff" stroke="#d6dde6"/><rect x="44"  y="66" width="22" height="22" fill="#d6e6ff" stroke="#2c6fab"/><rect x="66"  y="66" width="22" height="22" fill="#fff" stroke="#d6dde6"/><rect x="88"  y="66" width="22" height="22" fill="#fff" stroke="#d6dde6"/></g>
+  <g><rect x="0"   y="88" width="22" height="22" fill="#fff" stroke="#d6dde6"/><rect x="22"  y="88" width="22" height="22" fill="#fff" stroke="#d6dde6"/><rect x="44"  y="88" width="22" height="22" fill="#fff" stroke="#d6dde6"/><rect x="66"  y="88" width="22" height="22" fill="#fff" stroke="#d6dde6"/><rect x="88"  y="88" width="22" height="22" fill="#fff" stroke="#d6dde6"/></g>
+  <g><rect x="0"   y="110" width="22" height="22" fill="#fff" stroke="#d6dde6"/><rect x="22"  y="110" width="22" height="22" fill="#fff" stroke="#d6dde6"/><rect x="44"  y="110" width="22" height="22" fill="#fff" stroke="#d6dde6"/><rect x="66"  y="110" width="22" height="22" fill="#fff" stroke="#d6dde6"/><rect x="88"  y="110" width="22" height="22" fill="#fff" stroke="#d6dde6"/></g>
+</g>
+
+<text x="430" y="1062" font-size="22" fill="#5d6d7e" text-anchor="middle">→</text>
+<text class="sub" x="430" y="1082">+ conv K×K</text>
+
+<g transform="translate(470 1010)">
+  <text class="lab" x="55" y="14" font-size="11" fill="#1a9e9e">output 5×5</text>
+  <g fill="#3ecfcf" stroke="#1a9e9e">
+    <rect x="0"   y="22" width="22" height="22"/><rect x="22"  y="22" width="22" height="22"/><rect x="44"  y="22" width="22" height="22"/><rect x="66"  y="22" width="22" height="22"/><rect x="88"  y="22" width="22" height="22"/>
+    <rect x="0"   y="44" width="22" height="22"/><rect x="22"  y="44" width="22" height="22"/><rect x="44"  y="44" width="22" height="22"/><rect x="66"  y="44" width="22" height="22"/><rect x="88"  y="44" width="22" height="22"/>
+    <rect x="0"   y="66" width="22" height="22"/><rect x="22"  y="66" width="22" height="22"/><rect x="44"  y="66" width="22" height="22"/><rect x="66"  y="66" width="22" height="22"/><rect x="88"  y="66" width="22" height="22"/>
+    <rect x="0"   y="88" width="22" height="22"/><rect x="22"  y="88" width="22" height="22"/><rect x="44"  y="88" width="22" height="22"/><rect x="66"  y="88" width="22" height="22"/><rect x="88"  y="88" width="22" height="22"/>
+    <rect x="0"   y="110" width="22" height="22"/><rect x="22"  y="110" width="22" height="22"/><rect x="44"  y="110" width="22" height="22"/><rect x="66"  y="110" width="22" height="22"/><rect x="88"  y="110" width="22" height="22"/>
+  </g>
+</g>
+
+<text class="sub" x="410" y="1162">mathematically equivalent — implementation prefers GEMM + col2im to skip the zero-multiplies</text>
+
+</svg>
+<figcaption>Deconvolutional layer. The operator computes column buffers via GEMM and scatters them through col2im, equivalent to spreading the input with stride−1 zeros and convolving with the learned kernel — but cheaper because the zero-multiplies are never materialized.</figcaption>
+</figure>
+<section class="box"><h2>Backward Summary</h2><p>Backward applies activation derivatives, accumulates bias updates, uses GEMM for weight updates, and propagates previous-layer delta through im2col plus GEMM.</p></section>
+</main><footer><p>Source: <code>docs/deconvolutional_layer.md</code>.</p></footer><script>const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')}),{threshold:.15});document.querySelectorAll('.step').forEach(s=>io.observe(s));</script></body></html>

@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Graph Convolutional Layer Diagram</title>
+<style>:root{--ink:#16202a;--muted:#5d6d7e;--line:#d6dde6;--panel:#f8fafc;--blue:#5ba4e8;--teal:#3ecfcf;--green:#27ae60;--amber:#f5a623;--purple:#9b59b6;--gray:#95a5a6}*{box-sizing:border-box}body{margin:0;font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink)}header,main,footer{max-width:1120px;margin:auto;padding:24px 20px}header{border-bottom:1px solid var(--line)}h1{margin:0 0 8px;font-size:clamp(2rem,4vw,3.25rem);letter-spacing:0}.nav{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.nav a,.back{color:#145da0;font-weight:700;text-decoration:none}.quickref{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}.box,.callout{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:16px}.callout{border-left:5px solid var(--amber);background:#fff9ed}.phase{margin:28px 0 12px;padding:8px 12px;border-left:5px solid var(--amber);background:#fff9ed;font-weight:800}.step{display:grid;grid-template-columns:220px 1fr;gap:18px;margin:14px 0;padding:16px;border:1px solid var(--line);border-radius:8px;background:#fff;opacity:0;transform:translateY(30px);transition:.3s ease}.step.visible{opacity:1;transform:none}.num{font-weight:800}.step h3{margin:0 0 6px}.step p,p{margin:0;color:var(--muted)}table{width:100%;border-collapse:collapse;font-size:.92rem}td,th{border-bottom:1px solid var(--line);padding:7px;text-align:left}svg{width:100%;height:auto}.label{font-size:12px;fill:#223;font-weight:700}.arrow{stroke:#555;stroke-width:2;stroke-dasharray:120;stroke-dashoffset:120;transition:stroke-dashoffset .5s ease .3s}.visible .arrow{stroke-dashoffset:0}.op{rx:8;stroke-width:2}.attn{fill:var(--purple);stroke:#6c3483}.ffn{fill:var(--green);stroke:#1a7a42}.norm{fill:var(--amber);stroke:#c07800}.act{fill:var(--gray);stroke:#707b7c}.front{fill:var(--blue);stroke:#2c6fab}.out{fill:var(--teal);stroke:#1a9e9e}@media(max-width:760px){.step{grid-template-columns:1fr}}.architecture{margin:32px auto;max-width:820px;padding:24px;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:0 4px 14px rgba(22,32,42,.08)}.architecture svg{display:block;width:100%;height:auto}.architecture figcaption{margin-top:12px;text-align:center;font-size:.92rem;color:var(--muted);font-style:italic}</style></head>
+<body><header><a class="back" href="index.html">Layer diagram index</a><h1>Graph Convolutional Layer</h1><p>Local message passing over KxK neighborhoods with attention or uniform edge weights.</p><nav class="nav"><a href="transformer_layer.html">Transformer</a><a href="vit_layer.html">ViT</a><a href="dcnv4_layer.html">DCNv4</a><a href="deconvolutional_layer.html">Deconvolutional</a><a href="clifford_layer.html">Clifford</a><a href="graph_conv_layer.md">Guide</a></nav></header>
+<main>
+<section class="quickref"><div class="box"><h2>CFG Quickref</h2><table><tr><th>Param</th><th>Meaning</th></tr><tr><td><code>size</code></td><td>Neighborhood K</td></tr><tr><td><code>stride</code></td><td>Output lattice step</td></tr><tr><td><code>edge_mode</code></td><td>Attention or uniform edges</td></tr><tr><td><code>use_self</code></td><td>Add center projection</td></tr><tr><td><code>batch_normalize</code></td><td>Optional BN</td></tr></table></div><div class="callout"><h2>Credit Assignment Overlap</h2><p>One input pixel can receive gradients through several neighboring output stencils, so local messages overlap like convolution but carry adaptive edge weights.</p></div></section>
+
+<figure class="architecture">
+<svg viewBox="0 0 840 760" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Standard Convolution vs Graph Convolution comparison">
+<defs>
+  <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#16202a"/></marker>
+</defs>
+<style>
+  .ttl{font:700 17px system-ui,sans-serif;fill:#16202a;text-anchor:middle}
+  .sub2{font:500 12px system-ui,sans-serif;fill:#5d6d7e;text-anchor:middle}
+  .cell{font:600 13px ui-monospace,Menlo,Consolas,monospace;text-anchor:middle}
+  .lab{font:600 12px system-ui,sans-serif;fill:#16202a;text-anchor:middle}
+  .arr{fill:none;stroke:#16202a;stroke-width:2}
+  .note{font:600 12px system-ui,sans-serif;text-anchor:middle}
+  .eq{font:600 14px ui-monospace,Menlo,Consolas,monospace;fill:#145da0;text-anchor:middle}
+  .key{font:700 13px system-ui,sans-serif;text-anchor:middle}
+</style>
+
+<!-- Divider -->
+<line x1="420" y1="10" x2="420" y2="750" stroke="#d6dde6" stroke-width="2" stroke-dasharray="6 4"/>
+
+<!-- ========== LEFT PANEL: Standard Convolution ========== -->
+<text class="ttl" x="210" y="34">Standard Convolution</text>
+<text class="sub2" x="210" y="52">kernel = parameter (shared across sites)</text>
+
+<!-- Input features grid 3x3 at top -->
+<text class="lab" x="210" y="84">input window (3×3 features)</text>
+<g transform="translate(162 92)">
+  <rect x="0"  y="0"  width="32" height="32" fill="#d6e6ff" stroke="#2c6fab"/>
+  <rect x="32" y="0"  width="32" height="32" fill="#d6e6ff" stroke="#2c6fab"/>
+  <rect x="64" y="0"  width="32" height="32" fill="#d6e6ff" stroke="#2c6fab"/>
+  <rect x="0"  y="32" width="32" height="32" fill="#d6e6ff" stroke="#2c6fab"/>
+  <rect x="32" y="32" width="32" height="32" fill="#5ba4e8" stroke="#2c6fab"/>
+  <rect x="64" y="32" width="32" height="32" fill="#d6e6ff" stroke="#2c6fab"/>
+  <rect x="0"  y="64" width="32" height="32" fill="#d6e6ff" stroke="#2c6fab"/>
+  <rect x="32" y="64" width="32" height="32" fill="#d6e6ff" stroke="#2c6fab"/>
+  <rect x="64" y="64" width="32" height="32" fill="#d6e6ff" stroke="#2c6fab"/>
+  <text class="cell" x="16" y="20">f1</text><text class="cell" x="48" y="20">f2</text><text class="cell" x="80" y="20">f3</text>
+  <text class="cell" x="16" y="52">f4</text><text class="cell" x="48" y="52" fill="#fff">fc</text><text class="cell" x="80" y="52">f6</text>
+  <text class="cell" x="16" y="84">f7</text><text class="cell" x="48" y="84">f8</text><text class="cell" x="80" y="84">f9</text>
+</g>
+
+<!-- Arrow down -->
+<path class="arr" d="M210 200 V250" marker-end="url(#arr2)"/>
+<text class="sub2" x="248" y="228">independent of f</text>
+
+<!-- Kernel grid -->
+<text class="lab" x="210" y="270">FIXED kernel W (3×3 parameters)</text>
+<g transform="translate(162 280)">
+  <rect x="0"  y="0"  width="32" height="32" fill="#d6f0e0" stroke="#1a7a42"/>
+  <rect x="32" y="0"  width="32" height="32" fill="#d6f0e0" stroke="#1a7a42"/>
+  <rect x="64" y="0"  width="32" height="32" fill="#d6f0e0" stroke="#1a7a42"/>
+  <rect x="0"  y="32" width="32" height="32" fill="#d6f0e0" stroke="#1a7a42"/>
+  <rect x="32" y="32" width="32" height="32" fill="#d6f0e0" stroke="#1a7a42"/>
+  <rect x="64" y="32" width="32" height="32" fill="#d6f0e0" stroke="#1a7a42"/>
+  <rect x="0"  y="64" width="32" height="32" fill="#d6f0e0" stroke="#1a7a42"/>
+  <rect x="32" y="64" width="32" height="32" fill="#d6f0e0" stroke="#1a7a42"/>
+  <rect x="64" y="64" width="32" height="32" fill="#d6f0e0" stroke="#1a7a42"/>
+  <text class="cell" x="16" y="20">w1</text><text class="cell" x="48" y="20">w2</text><text class="cell" x="80" y="20">w3</text>
+  <text class="cell" x="16" y="52">w4</text><text class="cell" x="48" y="52">w5</text><text class="cell" x="80" y="52">w6</text>
+  <text class="cell" x="16" y="84">w7</text><text class="cell" x="48" y="84">w8</text><text class="cell" x="80" y="84">w9</text>
+</g>
+
+<!-- Same kernel reused at site A and site B -->
+<text class="key" x="210" y="402" fill="#1a7a42">↑ same W at every site i</text>
+
+<!-- ⊙ Σ -->
+<path class="arr" d="M210 416 V470" marker-end="url(#arr2)"/>
+<text class="sub2" x="246" y="446">⊙ then Σ</text>
+
+<!-- Output -->
+<rect x="178" y="470" width="64" height="44" rx="6" fill="#3ecfcf" stroke="#1a9e9e"/>
+<text class="lab" x="210" y="497" fill="#fff">y_i</text>
+
+<!-- Equation -->
+<text class="eq" x="210" y="556">y_i = Σ_k  w_k · f_k</text>
+<text class="sub2" x="210" y="582">w_k learned once, applied identically at every i</text>
+
+<!-- Insight -->
+<rect x="40" y="608" width="340" height="120" rx="8" fill="#eef5ff" stroke="#2c6fab"/>
+<text class="key" x="210" y="632" fill="#2c6fab">Translation-equivariant</text>
+<text class="sub2" x="210" y="654">Kernel pattern doesn't change with location</text>
+<text class="sub2" x="210" y="672">— a vertical edge detector is a vertical</text>
+<text class="sub2" x="210" y="690">edge detector everywhere on the image.</text>
+<text class="sub2" x="210" y="714">Cheap (one shared W). Rigid (no adapt).</text>
+
+<!-- ========== RIGHT PANEL: Graph Convolution ========== -->
+<text class="ttl" x="630" y="34">Graph Convolution (edge_mode = 1)</text>
+<text class="sub2" x="630" y="52">kernel = activation (computed from features)</text>
+
+<!-- Input features grid -->
+<text class="lab" x="630" y="84">input window (3×3 features)</text>
+<g transform="translate(582 92)">
+  <rect x="0"  y="0"  width="32" height="32" fill="#d6e6ff" stroke="#2c6fab"/>
+  <rect x="32" y="0"  width="32" height="32" fill="#d6e6ff" stroke="#2c6fab"/>
+  <rect x="64" y="0"  width="32" height="32" fill="#d6e6ff" stroke="#2c6fab"/>
+  <rect x="0"  y="32" width="32" height="32" fill="#d6e6ff" stroke="#2c6fab"/>
+  <rect x="32" y="32" width="32" height="32" fill="#5ba4e8" stroke="#2c6fab"/>
+  <rect x="64" y="32" width="32" height="32" fill="#d6e6ff" stroke="#2c6fab"/>
+  <rect x="0"  y="64" width="32" height="32" fill="#d6e6ff" stroke="#2c6fab"/>
+  <rect x="32" y="64" width="32" height="32" fill="#d6e6ff" stroke="#2c6fab"/>
+  <rect x="64" y="64" width="32" height="32" fill="#d6e6ff" stroke="#2c6fab"/>
+  <text class="cell" x="16" y="20">f1</text><text class="cell" x="48" y="20">f2</text><text class="cell" x="80" y="20">f3</text>
+  <text class="cell" x="16" y="52">f4</text><text class="cell" x="48" y="52" fill="#fff">fc</text><text class="cell" x="80" y="52">f6</text>
+  <text class="cell" x="16" y="84">f7</text><text class="cell" x="48" y="84">f8</text><text class="cell" x="80" y="84">f9</text>
+</g>
+
+<!-- Pair + W_pair + softmax pipeline (right side) -->
+<path class="arr" d="M678 188 H730 V234" marker-end="url(#arr2)"/>
+<rect x="700" y="234" width="120" height="22" rx="4" fill="#fff" stroke="#6c3483"/>
+<text class="cell" x="760" y="250" fill="#6c3483">pair (fc, f_j)</text>
+<rect x="700" y="262" width="120" height="22" rx="4" fill="#fff" stroke="#6c3483"/>
+<text class="cell" x="760" y="278" fill="#6c3483">W_pair · ·</text>
+<rect x="700" y="290" width="120" height="22" rx="4" fill="#fff" stroke="#6c3483"/>
+<text class="cell" x="760" y="306" fill="#6c3483">softmax</text>
+<path class="arr" d="M760 312 V340 H678" marker-end="url(#arr2)"/>
+
+<!-- Down arrow from input to edge weights -->
+<path class="arr" d="M630 200 V270" marker-end="url(#arr2)"/>
+<text class="sub2" x="586" y="240">depends on f</text>
+
+<!-- Edge weights grid (dynamic) -->
+<text class="lab" x="630" y="290">DYNAMIC edge weights e_ij (3×3)</text>
+<g transform="translate(582 300)">
+  <rect x="0"  y="0"  width="32" height="32" fill="#e9d6f0" stroke="#6c3483"/>
+  <rect x="32" y="0"  width="32" height="32" fill="#c997da" stroke="#6c3483"/>
+  <rect x="64" y="0"  width="32" height="32" fill="#eadcf0" stroke="#6c3483"/>
+  <rect x="0"  y="32" width="32" height="32" fill="#9b59b6" stroke="#6c3483"/>
+  <rect x="32" y="32" width="32" height="32" fill="#fff" stroke="#6c3483"/>
+  <rect x="64" y="32" width="32" height="32" fill="#9b59b6" stroke="#6c3483"/>
+  <rect x="0"  y="64" width="32" height="32" fill="#eadcf0" stroke="#6c3483"/>
+  <rect x="32" y="64" width="32" height="32" fill="#c997da" stroke="#6c3483"/>
+  <rect x="64" y="64" width="32" height="32" fill="#e9d6f0" stroke="#6c3483"/>
+  <text class="cell" x="16" y="20" fill="#6c3483">e1</text><text class="cell" x="48" y="20" fill="#6c3483">e2</text><text class="cell" x="80" y="20" fill="#6c3483">e3</text>
+  <text class="cell" x="16" y="52" fill="#fff">e4</text><text class="cell" x="48" y="52" fill="#999">−</text><text class="cell" x="80" y="52" fill="#fff">e6</text>
+  <text class="cell" x="16" y="84" fill="#6c3483">e7</text><text class="cell" x="48" y="84" fill="#6c3483">e8</text><text class="cell" x="80" y="84" fill="#6c3483">e9</text>
+</g>
+
+<text class="key" x="630" y="422" fill="#6c3483">↑ different e_ij at every site i</text>
+
+<!-- ⊙ Σ -->
+<path class="arr" d="M630 436 V470" marker-end="url(#arr2)"/>
+<text class="sub2" x="666" y="456">⊙ then Σ</text>
+
+<!-- Output -->
+<rect x="598" y="470" width="64" height="44" rx="6" fill="#3ecfcf" stroke="#1a9e9e"/>
+<text class="lab" x="630" y="497" fill="#fff">y_i</text>
+
+<!-- Equation -->
+<text class="eq" x="630" y="556">y_i = Σ_j  e_ij · f_j</text>
+<text class="sub2" x="630" y="578">e_ij = softmax(W_pair · pair(f_i, f_j))</text>
+<text class="sub2" x="630" y="596">recomputed per site from local features</text>
+
+<!-- Insight -->
+<rect x="460" y="608" width="340" height="120" rx="8" fill="#f4edf7" stroke="#6c3483"/>
+<text class="key" x="630" y="632" fill="#6c3483">Input-adaptive (data-dependent)</text>
+<text class="sub2" x="630" y="654">Flat region: edges balanced ≈ blur</text>
+<text class="sub2" x="630" y="672">Edge / texture: edges concentrate on</text>
+<text class="sub2" x="630" y="690">neighbors that match the center —</text>
+<text class="sub2" x="630" y="714">structure-preserving without smoothing.</text>
+
+</svg>
+<figcaption><strong>Conv vs Graph Conv:</strong> both gather a K×K window and compute a weighted sum. Conv uses one <em>shared, learned</em> kernel everywhere; Graph Conv computes a <em>fresh</em> set of weights from the local features at each site, so the same operator behaves differently depending on what's around the pixel.</figcaption>
+</figure>
+
+<figure class="architecture">
+<svg viewBox="0 0 820 1520" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Graph Convolutional layer architecture">
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#16202a"/></marker></defs>
+<style>
+  .blk{stroke-width:2}
+  .lbl{font:600 15px system-ui,sans-serif;fill:#16202a;text-anchor:middle}
+  .sub{font:500 12px system-ui,sans-serif;fill:#5d6d7e;text-anchor:middle}
+  .tag{font:600 11px system-ui,sans-serif;fill:#5d6d7e;text-anchor:middle}
+  .dim{font:600 12px ui-monospace,Menlo,Consolas,monospace;fill:#145da0;text-anchor:start}
+  .dimC{font:600 12px ui-monospace,Menlo,Consolas,monospace;fill:#145da0;text-anchor:middle}
+  .wire{fill:none;stroke:#16202a;stroke-width:2}
+  .skip{fill:none;stroke:#f5a623;stroke-width:2;stroke-dasharray:6 4}
+  .group{fill:#fffaf0;stroke:#c07800;stroke-width:1.5;stroke-dasharray:4 4}
+</style>
+
+<!-- Input -->
+<rect class="blk" x="300" y="40" width="200" height="60" rx="10" fill="#ff8c55" stroke="#c0622a"/>
+<text class="lbl" x="400" y="68">Input</text>
+<text class="sub" x="400" y="86">spatial feature map</text>
+<circle cx="400" cy="130" r="4" fill="#16202a"/>
+<path class="wire" d="M400 100 V180" marker-end="url(#arr)"/>
+<text class="dim" x="412" y="148">[B, C, H, W]</text>
+
+<!-- Output lattice -->
+<rect class="blk" x="280" y="180" width="240" height="60" rx="10" fill="#fff" stroke="#5d6d7e"/>
+<text class="lbl" x="400" y="208">Output lattice</text>
+<text class="sub" x="400" y="226">stride · padding · dilation</text>
+<path class="wire" d="M400 240 V300" marker-end="url(#arr)"/>
+<text class="dim" x="412" y="276">site grid: H_out × W_out</text>
+
+<!-- Gather K×K -->
+<rect class="blk" x="280" y="300" width="240" height="80" rx="10" fill="#d6e6ff" stroke="#2c6fab"/>
+<text class="lbl" x="400" y="332">Gather K×K neighborhood</text>
+<text class="sub" x="400" y="352">K = size  (center + K·K−1 neighbors)</text>
+<text class="sub" x="400" y="370">per output site</text>
+
+<!-- Fork: features down, edges left -->
+<circle cx="400" cy="412" r="5" fill="#16202a"/>
+<path class="wire" d="M400 380 V412"/>
+<text class="dim" x="412" y="438">[B, C, K·K, H_out, W_out]</text>
+<path class="wire" d="M400 412 H260" marker-end="url(#arr)"/>
+
+<!-- Edge weights group container -->
+<rect class="group" x="20" y="445" width="240" height="370" rx="10"/>
+<text class="lbl" x="140" y="470" fill="#c07800">Edge weights</text>
+<text class="sub" x="140" y="486">e_ij  (edge_mode)</text>
+
+<!-- attention sub-box -->
+<rect class="blk" x="40" y="500" width="200" height="180" rx="8" fill="#e9d6f0" stroke="#6c3483"/>
+<text class="lbl" x="140" y="522">edge_mode = 1</text>
+<text class="sub" x="140" y="540">attention</text>
+<rect x="60" y="554" width="160" height="26" rx="4" fill="#fff" stroke="#6c3483"/>
+<text class="sub" x="140" y="572">pair (f_i, f_j)</text>
+<rect x="60" y="588" width="160" height="26" rx="4" fill="#fff" stroke="#6c3483"/>
+<text class="sub" x="140" y="606">W_pair → logit</text>
+<rect x="60" y="622" width="160" height="26" rx="4" fill="#fff" stroke="#6c3483"/>
+<text class="sub" x="140" y="640">softmax over K·K</text>
+<text class="dimC" x="140" y="668">e_ij ∈ [0,1]</text>
+
+<!-- divider -->
+<text class="lbl" x="140" y="708" fill="#c07800">OR</text>
+
+<!-- uniform sub-box -->
+<rect class="blk" x="40" y="720" width="200" height="80" rx="8" fill="#f0f0f2" stroke="#707b7c"/>
+<text class="lbl" x="140" y="744">edge_mode = 0</text>
+<text class="sub" x="140" y="762">uniform</text>
+<text class="dimC" x="140" y="784">e_ij = 1 / (K·K)</text>
+
+<!-- Edge group output to aggregate left side -->
+<path class="wire" d="M260 770 H290" marker-end="url(#arr)"/>
+<text class="tag" x="276" y="760">e_ij</text>
+
+<!-- Center wire continues straight down past edge group -->
+<path class="wire" d="M400 412 V870" marker-end="url(#arr)"/>
+
+<!-- Weighted aggregate -->
+<rect class="blk" x="290" y="870" width="220" height="80" rx="10" fill="#e9d6f0" stroke="#6c3483"/>
+<text class="lbl" x="400" y="902">Weighted aggregate</text>
+<text class="sub" x="400" y="922">aggr_i = Σ_j e_ij · f_j</text>
+<text class="dim" x="412" y="980">[B, C, H_out, W_out]</text>
+<path class="wire" d="M400 950 V1010" marker-end="url(#arr)"/>
+
+<!-- W_neigh (main column) -->
+<rect class="blk" x="290" y="1010" width="220" height="56" rx="10" fill="#d6f0e0" stroke="#1a7a42"/>
+<text class="lbl" x="400" y="1036">W_neigh projection</text>
+<text class="sub" x="400" y="1054">aggr → N channels</text>
+
+<!-- W_self (right column, optional) -->
+<rect class="blk" x="560" y="1010" width="220" height="56" rx="10" fill="#d6f0e0" stroke="#1a7a42"/>
+<text class="lbl" x="670" y="1036">W_self projection</text>
+<text class="sub" x="670" y="1054">center f_i (use_self, opt.)</text>
+
+<!-- W_self skip from input tap -->
+<path class="skip" d="M400 130 H750 Q780 130 780 160 V1010" marker-end="url(#arr)"/>
+
+<!-- Merge wires to ⊕ -->
+<path class="wire" d="M400 1066 V1148" marker-end="url(#arr)"/>
+<path class="wire" d="M670 1066 V1170 H422" marker-end="url(#arr)"/>
+
+<!-- ⊕ residual sum -->
+<circle class="blk" cx="400" cy="1170" r="22" fill="#fff" stroke="#16202a"/>
+<text class="lbl" x="400" y="1176">+</text>
+<path class="wire" d="M400 1192 V1252" marker-end="url(#arr)"/>
+<text class="dim" x="412" y="1228">[B, N, H_out, W_out]</text>
+
+<!-- BatchNorm -->
+<rect class="blk" x="290" y="1252" width="220" height="56" rx="10" fill="#ffe6b3" stroke="#c07800"/>
+<text class="lbl" x="400" y="1278">BatchNorm</text>
+<text class="sub" x="400" y="1296">batch_normalize (optional)</text>
+<path class="wire" d="M400 1308 V1364" marker-end="url(#arr)"/>
+
+<!-- Activation -->
+<rect class="blk" x="290" y="1364" width="220" height="56" rx="10" fill="#f0f0f2" stroke="#707b7c"/>
+<text class="lbl" x="400" y="1396">Activation</text>
+<path class="wire" d="M400 1420 V1460" marker-end="url(#arr)"/>
+
+<!-- Output -->
+<rect class="blk" x="300" y="1460" width="200" height="60" rx="10" fill="#3ecfcf" stroke="#1a9e9e"/>
+<text class="lbl" x="400" y="1488">Output</text>
+<text class="sub" x="400" y="1506">[B, N, H_out, W_out]</text>
+
+<!-- Tag for skip -->
+<text class="tag" x="804" y="600" transform="rotate(90 804 600)">center skip → W_self</text>
+</svg>
+<figcaption>Graph Convolutional layer. Each output site aggregates a K×K neighborhood with edge weights from one of two modes (attention or uniform), then projects through W_neigh plus an optional W_self skip from the center pixel.</figcaption>
+</figure>
+<section class="box"><h2>Backward Summary</h2><p>Gradients flow through activation and BN, split over self and neighbor projections, pass through aggregate weights, and finally distribute to every overlapping KxK neighborhood sample.</p></section>
+</main><footer><p>Source checkpoints: <code>src-lib/graph_conv_layer.hpp</code> [01]-[14]. Guide: <a href="graph_conv_layer.md">graph_conv_layer.md</a>.</p></footer><script>const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')}),{threshold:.15});document.querySelectorAll('.step').forEach(s=>io.observe(s));</script></body></html>

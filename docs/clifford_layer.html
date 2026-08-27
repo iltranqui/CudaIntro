@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Clifford Layer Diagram</title>
+<style>:root{--ink:#16202a;--muted:#5d6d7e;--line:#d6dde6;--panel:#f8fafc;--blue:#5ba4e8;--teal:#3ecfcf;--green:#27ae60;--amber:#f5a623;--purple:#9b59b6;--gray:#95a5a6}*{box-sizing:border-box}body{margin:0;font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink)}header,main,footer{max-width:1120px;margin:auto;padding:24px 20px}header{border-bottom:1px solid var(--line)}h1{margin:0 0 8px;font-size:clamp(2rem,4vw,3.25rem);letter-spacing:0}.nav{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.nav a,.back{color:#145da0;font-weight:700;text-decoration:none}.quickref{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}.box,.callout{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:16px}.callout{border-left:5px solid var(--purple);background:#f8f1fb}.phase{margin:28px 0 12px;padding:8px 12px;border-left:5px solid var(--purple);background:#f4edf7;font-weight:800}.step{display:grid;grid-template-columns:220px 1fr;gap:18px;margin:14px 0;padding:16px;border:1px solid var(--line);border-radius:8px;background:#fff;opacity:0;transform:translateY(30px);transition:.3s ease}.step.visible{opacity:1;transform:none}.num{font-weight:800}.step h3{margin:0 0 6px}.step p,p{margin:0;color:var(--muted)}table{width:100%;border-collapse:collapse;font-size:.92rem}td,th{border-bottom:1px solid var(--line);padding:7px;text-align:left}svg{width:100%;height:auto}.label{font-size:12px;fill:#223;font-weight:700}.arrow{stroke:#555;stroke-width:2;stroke-dasharray:120;stroke-dashoffset:120;transition:stroke-dashoffset .5s ease .3s}.visible .arrow{stroke-dashoffset:0}.op{rx:8;stroke-width:2}.conv{fill:var(--green);stroke:#1a7a42}.wedge{fill:var(--purple);stroke:#6c3483}.inner{fill:var(--amber);stroke:#c07800}.res{fill:var(--gray);stroke:#707b7c}.front{fill:var(--blue);stroke:#2c6fab}.out{fill:var(--teal);stroke:#1a9e9e}@media(max-width:760px){.step{grid-template-columns:1fr}}.architecture{margin:32px auto;max-width:760px;padding:24px;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:0 4px 14px rgba(22,32,42,.08)}.architecture svg{display:block;width:100%;height:auto}.architecture figcaption{margin-top:12px;text-align:center;font-size:.92rem;color:var(--muted);font-style:italic}</style></head>
+<body><header><a class="back" href="index.html">Layer diagram index</a><h1>Clifford Layer</h1><p>Algebraic local interactions using channel shifts, wedge and inner products, global mixing, scale, and residual flow.</p><nav class="nav"><a href="transformer_layer.html">Transformer</a><a href="vit_layer.html">ViT</a><a href="dcnv4_layer.html">DCNv4</a><a href="deconvolutional_layer.html">Deconvolutional</a><a href="graph_conv_layer.html">Graph Conv</a></nav></header>
+<main>
+<section class="quickref"><div class="box"><h2>CFG Quickref</h2><table><tr><th>Param</th><th>Meaning</th></tr><tr><td><code>shifts</code></td><td>Wedge channel schedule</td></tr><tr><td><code>inner_shifts</code></td><td>Optional scalar schedule</td></tr><tr><td><code>dwconv_size</code></td><td>Local depthwise size</td></tr><tr><td><code>drop_path</code></td><td>Stochastic depth</td></tr><tr><td><code>layerscale_init</code></td><td>Per-channel scale init</td></tr></table></div><div class="callout"><h2>Geometric Intuition</h2><p>Wedge products emphasize antisymmetric contrast and edge-like relations; inner products emphasize symmetric alignment and coherence.</p></div></section>
+<figure class="architecture">
+<svg viewBox="0 0 720 1540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Clifford layer architecture">
+<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#16202a"/></marker></defs>
+<style>
+  .blk{stroke-width:2}
+  .lbl{font:600 15px system-ui,sans-serif;fill:#16202a;text-anchor:middle}
+  .sub{font:500 12px system-ui,sans-serif;fill:#5d6d7e;text-anchor:middle}
+  .tag{font:600 11px system-ui,sans-serif;fill:#5d6d7e;text-anchor:middle}
+  .dim{font:600 12px ui-monospace,Menlo,Consolas,monospace;fill:#145da0;text-anchor:start}
+  .wire{fill:none;stroke:#16202a;stroke-width:2}
+  .skip{fill:none;stroke:#9b59b6;stroke-width:2;stroke-dasharray:6 4}
+</style>
+
+<!-- Input -->
+<rect class="blk" x="260" y="40" width="200" height="60" rx="10" fill="#ff8c55" stroke="#c0622a"/>
+<text class="lbl" x="360" y="68">Input</text>
+<text class="sub" x="360" y="86">spatial feature map</text>
+<path class="wire" d="M360 100 V180" marker-end="url(#arr)"/>
+<text class="dim" x="372" y="148">[B, C, H, W]</text>
+<circle cx="360" cy="130" r="4" fill="#16202a"/>
+
+<!-- DWConv -->
+<rect class="blk" x="240" y="180" width="240" height="60" rx="10" fill="#d6f0e0" stroke="#1a7a42"/>
+<text class="lbl" x="360" y="208">Depthwise Conv</text>
+<text class="sub" x="360" y="226">dwconv_size · k×k (optional)</text>
+<path class="wire" d="M360 240 V300" marker-end="url(#arr)"/>
+<text class="dim" x="372" y="276">[B, C, H, W]</text>
+
+<!-- Branch fork node -->
+<circle cx="360" cy="312" r="5" fill="#16202a"/>
+<path class="wire" d="M360 312 H180 V370" marker-end="url(#arr)"/>
+<path class="wire" d="M360 312 H540 V370" marker-end="url(#arr)"/>
+
+<!-- Wedge shift (left) -->
+<rect class="blk" x="80" y="370" width="200" height="56" rx="10" fill="#fff" stroke="#5d6d7e"/>
+<text class="lbl" x="180" y="396">Channel shift</text>
+<text class="sub" x="180" y="414">wedge schedule (shifts)</text>
+<path class="wire" d="M180 426 V480" marker-end="url(#arr)"/>
+
+<!-- Wedge product -->
+<rect class="blk" x="80" y="480" width="200" height="60" rx="10" fill="#e9d6f0" stroke="#6c3483"/>
+<text class="lbl" x="180" y="508">x_i ∧ x_s</text>
+<text class="sub" x="180" y="526">wedge / antisymmetric</text>
+<path class="wire" d="M180 540 V598 H300 V630" marker-end="url(#arr)"/>
+<text class="dim" x="20" y="592">[B, C, H, W]</text>
+
+<!-- Inner shift (right) -->
+<rect class="blk" x="440" y="370" width="200" height="56" rx="10" fill="#fff" stroke="#5d6d7e"/>
+<text class="lbl" x="540" y="396">Channel shift</text>
+<text class="sub" x="540" y="414">inner schedule (inner_shifts)</text>
+<path class="wire" d="M540 426 V480" marker-end="url(#arr)"/>
+
+<!-- Inner product -->
+<rect class="blk" x="440" y="480" width="200" height="60" rx="10" fill="#fff5e6" stroke="#c07800"/>
+<text class="lbl" x="540" y="508">x_i · x_s</text>
+<text class="sub" x="540" y="526">inner / symmetric</text>
+<path class="wire" d="M540 540 V598 H420 V630" marker-end="url(#arr)"/>
+<text class="dim" x="552" y="592">[B, C, H, W]</text>
+
+<!-- Concat -->
+<rect class="blk" x="240" y="630" width="240" height="60" rx="10" fill="#d6e6ff" stroke="#2c6fab"/>
+<text class="lbl" x="360" y="658">Concatenate</text>
+<text class="sub" x="360" y="676">wedge ⊕ inner channels</text>
+<path class="wire" d="M360 690 V760" marker-end="url(#arr)"/>
+<text class="dim" x="372" y="730">[B, 2C, H, W]</text>
+
+<!-- Global 1x1 mixer -->
+<rect class="blk" x="240" y="760" width="240" height="60" rx="10" fill="#d6f0e0" stroke="#1a7a42"/>
+<text class="lbl" x="360" y="788">Global 1×1 mix</text>
+<text class="sub" x="360" y="806">channel projection 2C → N</text>
+<path class="wire" d="M360 820 V880" marker-end="url(#arr)"/>
+<text class="dim" x="372" y="856">[B, N, H, W]</text>
+
+<!-- Higher-order -->
+<rect class="blk" x="240" y="880" width="240" height="56" rx="10" fill="#fff" stroke="#5d6d7e"/>
+<text class="lbl" x="360" y="906">Higher-order interaction</text>
+<text class="sub" x="360" y="924">extra local mix (optional)</text>
+<path class="wire" d="M360 936 V996" marker-end="url(#arr)"/>
+<text class="dim" x="372" y="972">[B, N, H, W]</text>
+
+<!-- LayerScale -->
+<rect class="blk" x="260" y="996" width="200" height="56" rx="10" fill="#ffe6b3" stroke="#c07800"/>
+<text class="lbl" x="360" y="1022">LayerScale ⊙ γ</text>
+<text class="sub" x="360" y="1040">per-channel scale (layerscale_init)</text>
+<path class="wire" d="M360 1052 V1112" marker-end="url(#arr)"/>
+
+<!-- DropPath -->
+<rect class="blk" x="260" y="1112" width="200" height="56" rx="10" fill="#e6e8ea" stroke="#707b7c"/>
+<text class="lbl" x="360" y="1138">DropPath</text>
+<text class="sub" x="360" y="1156">stochastic depth (drop_path)</text>
+<path class="wire" d="M360 1168 V1230" marker-end="url(#arr)"/>
+<text class="dim" x="372" y="1204">[B, N, H, W]</text>
+
+<!-- Residual add -->
+<circle class="blk" cx="360" cy="1252" r="22" fill="#fff" stroke="#16202a"/>
+<text class="lbl" x="360" y="1258">+</text>
+<path class="wire" d="M360 1274 V1334" marker-end="url(#arr)"/>
+<text class="dim" x="372" y="1310">[B, N, H, W]</text>
+
+<!-- Activation -->
+<rect class="blk" x="260" y="1334" width="200" height="56" rx="10" fill="#d6f0e0" stroke="#1a7a42"/>
+<text class="lbl" x="360" y="1366">Activation</text>
+<path class="wire" d="M360 1390 V1450" marker-end="url(#arr)"/>
+
+<!-- Output -->
+<rect class="blk" x="260" y="1450" width="200" height="60" rx="10" fill="#3ecfcf" stroke="#1a9e9e"/>
+<text class="lbl" x="360" y="1478">Output</text>
+<text class="sub" x="360" y="1496">[B, N, H, W]</text>
+
+<!-- Skip residual: from input tap down right side to ⊕ -->
+<path class="skip" d="M360 130 H660 Q680 130 680 150 V1232 Q680 1252 660 1252 H382" marker-end="url(#arr)"/>
+<text class="tag" x="704" y="700" transform="rotate(90 704 700)">residual identity (shortcut)</text>
+</svg>
+<figcaption>Clifford encoder layer. Two parallel algebraic interaction paths (wedge ∧ and inner ·) feed a concat → mix → scale → residual pipeline.</figcaption>
+</figure>
+<section class="box"><h2>Backward Summary</h2><p>Backward unrolls activation, residual/drop-path/layer-scale, higher-order and global paths, then distributes wedge and inner gradients back through the cyclic channel schedules.</p></section>
+</main><footer><p>Sources: <code>src-lib/clifford_layer.hpp</code> and <code>src-lib/clifford_layer.cpp</code>.</p></footer><script>const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')}),{threshold:.15});document.querySelectorAll('.step').forEach(s=>io.observe(s));</script></body></html>

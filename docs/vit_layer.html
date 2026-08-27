@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ViT Layer Diagram</title>
+<style>
+:root{--ink:#16202a;--muted:#5d6d7e;--line:#d6dde6;--panel:#f8fafc;--input:#ff8c55;--mid:#5ba4e8;--out:#3ecfcf;--ln:#f5a623;--attn:#9b59b6;--ffn:#27ae60;--res:#95a5a6;--flow:#9b59b6}*{box-sizing:border-box}body{margin:0;font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink)}header,main,footer{max-width:1120px;margin:auto;padding:24px 20px}header{border-bottom:1px solid var(--line)}h1{margin:0 0 8px;font-size:clamp(2rem,4vw,3.25rem);letter-spacing:0}.nav{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.nav a,.back{color:#145da0;font-weight:700;text-decoration:none}.quickref{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}.box,.callout{border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:16px}.callout{border-left:5px solid #e74c3c;background:#fff5f3}.architecture{margin:32px auto;max-width:680px;padding:24px;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:0 4px 14px rgba(22,32,42,.08)}.architecture svg{display:block;width:100%;height:auto}.architecture figcaption{margin-top:12px;text-align:center;font-size:.92rem;color:var(--muted);font-style:italic}.num{font-weight:800}.step h3{margin:0 0 6px}.step p,p{margin:0;color:var(--muted)}table{width:100%;border-collapse:collapse;font-size:.92rem}td,th{border-bottom:1px solid var(--line);padding:7px;text-align:left}svg{width:100%;height:auto}.label{font-size:12px;fill:#223;font-weight:700}.arrow{stroke:#555;stroke-width:2;stroke-dasharray:120;stroke-dashoffset:120;transition:stroke-dashoffset .5s ease .3s}.visible .arrow{stroke-dashoffset:0}.op{rx:8;stroke-width:2}.normalization{fill:var(--ln);stroke:#c07800}.attention{fill:var(--attn);stroke:#6c3483}.ffn{fill:var(--ffn);stroke:#1a7a42}.residual{fill:var(--res);stroke:#707b7c}.face-front.input{fill:#ff8c55;stroke:#c0622a}.face-top.input{fill:#ffab7f;stroke:#c0622a}.face-right.input{fill:#d4623a;stroke:#c0622a}.face-front.intermediate{fill:#5ba4e8;stroke:#2c6fab}.face-top.intermediate{fill:#85bef0;stroke:#2c6fab}.face-right.intermediate{fill:#3a7dc4;stroke:#2c6fab}.face-front.output{fill:#3ecfcf;stroke:#1a9e9e}.face-top.output{fill:#72e0e0;stroke:#1a9e9e}.face-right.output{fill:#1ea5a5;stroke:#1a9e9e}@media(max-width:760px){.step{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><a class="back" href="index.html">Layer diagram index</a><h1>Vision Transformer Layer</h1><p>Global multi-head attention over all H*W tokens with absolute positional embeddings.</p><nav class="nav"><a href="transformer_layer.html">Transformer</a><a href="dcnv4_layer.html">DCNv4</a><a href="deconvolutional_layer.html">Deconvolutional</a><a href="clifford_layer.html">Clifford</a><a href="graph_conv_layer.html">Graph Conv</a></nav></header>
+<main>
+<section class="quickref"><div class="box"><h2>CFG Quickref</h2><table><tr><th>Param</th><th>Meaning</th></tr><tr><td><code>filters</code></td><td>Output channels N</td></tr><tr><td><code>heads</code></td><td>Attention heads</td></tr><tr><td><code>ffn_ratio</code></td><td>FFN expansion</td></tr><tr><td><code>activation</code></td><td>FFN nonlinearity</td></tr></table></div><div class="box"><h2>Legend</h2><p>ViT uses the same tensor/op symbols as the Swin page, but the attention heatmap is global: every token can attend to every other token.</p></div></section>
+<section class="callout"><h2>O(T^2) Memory Warning</h2><table><tr><th>Feature map</th><th>T</th><th>T^2 per head</th></tr><tr><td>13x13</td><td>169</td><td>28,561</td></tr><tr><td>26x26</td><td>676</td><td>456,976</td></tr><tr><td>52x52</td><td>2,704</td><td>7,311,616</td></tr></table></section>
+<figure class="architecture">
+<svg viewBox="0 0 720 1620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vision Transformer layer architecture">
+<defs>
+  <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+    <path d="M0,0 L10,5 L0,10 z" fill="#16202a"/>
+  </marker>
+</defs>
+<style>
+  .blk{stroke-width:2}
+  .lbl{font:600 15px system-ui,sans-serif;fill:#16202a;text-anchor:middle}
+  .sub{font:500 12px system-ui,sans-serif;fill:#5d6d7e;text-anchor:middle}
+  .tag{font:600 11px system-ui,sans-serif;fill:#5d6d7e;text-anchor:middle}
+  .dim{font:600 12px ui-monospace,Menlo,Consolas,monospace;fill:#145da0;text-anchor:start}
+  .dimC{font:600 12px ui-monospace,Menlo,Consolas,monospace;fill:#145da0;text-anchor:middle}
+  .wire{fill:none;stroke:#16202a;stroke-width:2}
+  .skip{fill:none;stroke:#9b59b6;stroke-width:2;stroke-dasharray:6 4}
+</style>
+
+<!-- Input (top) -->
+<rect class="blk" x="260" y="40" width="200" height="60" rx="10" fill="#ff8c55" stroke="#c0622a"/>
+<text class="lbl" x="360" y="68">Input</text>
+<text class="sub" x="360" y="86">spatial feature map</text>
+<path class="wire" d="M360 100 V180" marker-end="url(#arr)"/>
+<text class="dim" x="372" y="148">[B, C, H, W]</text>
+
+<!-- Flatten + Linear -->
+<rect class="blk" x="240" y="180" width="240" height="60" rx="10" fill="#d6e6ff" stroke="#2c6fab"/>
+<text class="lbl" x="360" y="208">Flatten + Linear proj</text>
+<text class="sub" x="360" y="226">H·W → T tokens · C → N</text>
+<path class="wire" d="M360 240 V300" marker-end="url(#arr)"/>
+<text class="dim" x="372" y="276">[B, T, N]   T = H·W</text>
+
+<!-- Add positional -->
+<circle class="blk" cx="360" cy="320" r="22" fill="#fff" stroke="#16202a"/>
+<text class="lbl" x="360" y="326">+</text>
+<rect class="blk" x="100" y="300" width="160" height="44" rx="22" fill="#f5a623" stroke="#c07800"/>
+<text class="lbl" x="180" y="328">Positional emb</text>
+<path class="wire" d="M260 320 H338" marker-end="url(#arr)"/>
+<text class="dim" x="180" y="290">[B, T, N]</text>
+<path class="wire" d="M360 342 V400" marker-end="url(#arr)"/>
+<text class="dim" x="372" y="378">[B, T, N]</text>
+
+<!-- LN1 -->
+<rect class="blk" x="260" y="400" width="200" height="56" rx="10" fill="#ffe6b3" stroke="#c07800"/>
+<text class="lbl" x="360" y="434">LayerNorm</text>
+<path class="wire" d="M360 456 V520" marker-end="url(#arr)"/>
+<text class="dim" x="372" y="496">[B, T, N]</text>
+
+<!-- Multi-Head Self-Attention -->
+<rect class="blk" x="220" y="520" width="280" height="170" rx="10" fill="#e9d6f0" stroke="#6c3483"/>
+<text class="lbl" x="360" y="552">Multi-Head Self-Attention</text>
+<text class="sub" x="360" y="572">global T×T (every token ↔ every token)</text>
+<g transform="translate(254 590)">
+  <rect x="0" y="0" width="60" height="32" rx="4" fill="#9b59b6" stroke="#6c3483"/>
+  <text class="lbl" x="30" y="22" fill="#fff">Q</text>
+  <rect x="76" y="0" width="60" height="32" rx="4" fill="#9b59b6" stroke="#6c3483"/>
+  <text class="lbl" x="106" y="22" fill="#fff">K</text>
+  <rect x="152" y="0" width="60" height="32" rx="4" fill="#9b59b6" stroke="#6c3483"/>
+  <text class="lbl" x="182" y="22" fill="#fff">V</text>
+</g>
+<text class="dimC" x="360" y="642">each: [B, h, T, d]   d = N/h</text>
+<text class="sub" x="360" y="668">softmax(QKᵀ/√d)·V → concat heads → Wo</text>
+<path class="wire" d="M360 690 V760" marker-end="url(#arr)"/>
+<text class="dim" x="372" y="734">[B, T, N]</text>
+
+<!-- Add 1 (residual after MHSA) -->
+<circle class="blk" cx="360" cy="780" r="22" fill="#fff" stroke="#16202a"/>
+<text class="lbl" x="360" y="786">+</text>
+<path class="wire" d="M360 802 V860" marker-end="url(#arr)"/>
+<text class="dim" x="372" y="838">[B, T, N]</text>
+
+<!-- LN2 -->
+<rect class="blk" x="260" y="860" width="200" height="56" rx="10" fill="#ffe6b3" stroke="#c07800"/>
+<text class="lbl" x="360" y="894">LayerNorm</text>
+<path class="wire" d="M360 916 V980" marker-end="url(#arr)"/>
+<text class="dim" x="372" y="956">[B, T, N]</text>
+
+<!-- FFN -->
+<rect class="blk" x="240" y="980" width="240" height="140" rx="10" fill="#d6f0e0" stroke="#1a7a42"/>
+<text class="lbl" x="360" y="1012">Feed-Forward</text>
+<text class="sub" x="360" y="1034">FC1 → activation → FC2</text>
+<text class="dimC" x="360" y="1062">[B, T, N] → [B, T, N·r]</text>
+<text class="dimC" x="360" y="1080">→ [B, T, N]</text>
+<text class="sub" x="360" y="1102">r = ffn_ratio</text>
+<path class="wire" d="M360 1120 V1180" marker-end="url(#arr)"/>
+<text class="dim" x="372" y="1156">[B, T, N]</text>
+
+<!-- Add 2 (residual after FFN) -->
+<circle class="blk" cx="360" cy="1200" r="22" fill="#fff" stroke="#16202a"/>
+<text class="lbl" x="360" y="1206">+</text>
+<path class="wire" d="M360 1222 V1280" marker-end="url(#arr)"/>
+<text class="dim" x="372" y="1258">[B, T, N]</text>
+
+<!-- Reshape -->
+<rect class="blk" x="260" y="1280" width="200" height="60" rx="10" fill="#fff" stroke="#5d6d7e"/>
+<text class="lbl" x="360" y="1308">Reshape</text>
+<text class="sub" x="360" y="1326">tokens → spatial</text>
+<path class="wire" d="M360 1340 V1420" marker-end="url(#arr)"/>
+<text class="dim" x="372" y="1388">[B, N, H, W]</text>
+
+<!-- Output (bottom) -->
+<rect class="blk" x="260" y="1420" width="200" height="60" rx="10" fill="#3ecfcf" stroke="#1a9e9e"/>
+<text class="lbl" x="360" y="1448">Output</text>
+<text class="sub" x="360" y="1466">[B, N, H, W]</text>
+
+<!-- Skip 1: from after pos-add (y=342) down right side to + after MHSA (y=780) -->
+<path class="skip" d="M360 344 H580 Q600 344 600 364 V760 Q600 780 580 780 H382" marker-end="url(#arr)"/>
+<text class="tag" x="624" y="560" transform="rotate(90 624 560)">residual (skip MHSA)</text>
+
+<!-- Skip 2: from after first add (y=802) down right side to + after FFN (y=1200) -->
+<path class="skip" d="M360 804 H640 Q660 804 660 824 V1180 Q660 1200 640 1200 H382" marker-end="url(#arr)"/>
+<text class="tag" x="684" y="1000" transform="rotate(90 684 1000)">residual (skip FFN)</text>
+
+<!-- Encoder repeat indicator -->
+<text class="tag" x="510" y="700">×L blocks</text>
+</svg>
+<figcaption>Vision Transformer encoder layer. Bottom-up data flow with two residual paths bypassing self-attention and the feed-forward sublayer.</figcaption>
+</figure>
+<section class="box"><h2>Backward Summary</h2><p>Gradients flow back through reshape, residual branches, FFN, projection, attention probabilities and scores, Q/K/V, positional embeddings, and the initial spatial flattening.</p></section>
+<svg width="0" height="0" style="position:absolute"><defs><g id="tensor-input"><polygon class="face-top input" points="34,34 58,22 138,22 114,34"/><polygon class="face-front input" points="34,34 114,34 114,78 34,78"/><polygon class="face-right input" points="114,34 138,22 138,66 114,78"/></g><g id="tensor-mid"><polygon class="face-top intermediate" points="34,34 58,22 138,22 114,34"/><polygon class="face-front intermediate" points="34,34 114,34 114,78 34,78"/><polygon class="face-right intermediate" points="114,34 138,22 138,66 114,78"/></g><g id="tensor-output"><polygon class="face-top output" points="34,34 58,22 138,22 114,34"/><polygon class="face-front output" points="34,34 114,34 114,78 34,78"/><polygon class="face-right output" points="114,34 138,22 138,66 114,78"/></g><g id="tape"><g fill="#5ba4e8" stroke="#2c6fab"><rect x="24" y="45" width="18" height="22"/><rect x="46" y="45" width="18" height="22"/><rect x="68" y="45" width="18" height="22"/><rect x="90" y="45" width="18" height="22"/><rect x="112" y="45" width="18" height="22"/><rect x="134" y="45" width="18" height="22"/></g></g><g id="heatmap"><g stroke="#fff"><rect x="54" y="18" width="18" height="18" fill="#eadcf0"/><rect x="72" y="18" width="18" height="18" fill="#9b59b6"/><rect x="90" y="18" width="18" height="18" fill="#c997da"/><rect x="108" y="18" width="18" height="18" fill="#b879cf"/><rect x="126" y="18" width="18" height="18" fill="#d8b6e6"/><rect x="144" y="18" width="18" height="18" fill="#9b59b6"/><rect x="54" y="36" width="18" height="18" fill="#b879cf"/><rect x="72" y="36" width="18" height="18" fill="#eadcf0"/><rect x="90" y="36" width="18" height="18" fill="#9b59b6"/><rect x="108" y="36" width="18" height="18" fill="#d8b6e6"/><rect x="126" y="36" width="18" height="18" fill="#c997da"/><rect x="144" y="36" width="18" height="18" fill="#b879cf"/><rect x="54" y="54" width="18" height="18" fill="#9b59b6"/><rect x="72" y="54" width="18" height="18" fill="#b879cf"/><rect x="90" y="54" width="18" height="18" fill="#eadcf0"/><rect x="108" y="54" width="18" height="18" fill="#9b59b6"/><rect x="126" y="54" width="18" height="18" fill="#d8b6e6"/><rect x="144" y="54" width="18" height="18" fill="#c997da"/><rect x="54" y="72" width="18" height="18" fill="#d8b6e6"/><rect x="72" y="72" width="18" height="18" fill="#9b59b6"/><rect x="90" y="72" width="18" height="18" fill="#b879cf"/><rect x="108" y="72" width="18" height="18" fill="#eadcf0"/><rect x="126" y="72" width="18" height="18" fill="#9b59b6"/><rect x="144" y="72" width="18" height="18" fill="#d8b6e6"/></g></g></defs></svg>
+</main><footer><p>Source checkpoints: <code>src-lib/vit_layer.hpp</code> [01]-[24].</p></footer><script>const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')}),{threshold:.15});document.querySelectorAll('.step').forEach(s=>io.observe(s));</script>
+</body></html>
